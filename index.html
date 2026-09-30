@@ -1,0 +1,2185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrepArena — AI Interview Practice</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2311110f'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%23d6b66f' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='9' fill='%23d6b66f'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Human.js: runs face detection + expression analysis fully in-browser (nothing is uploaded anywhere) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/human/3.3.6/human.min.js"></script>
+<style>
+  :root{
+    --bg-1: #0E0B21;
+    --bg-2: #1B1240;
+    --panel: rgba(255,255,255,0.045);
+    --panel-solid: #1A1438;
+    --border: rgba(255,255,255,0.10);
+    --text: #F3F1FA;
+    --text-dim: #A79FC7;
+    --cyan: #4FE3D2;
+    --pink: #FF5DA2;
+    --violet: #8B7CF6;
+    --easy: #3FDD8C;
+    --moderate: #FFB84C;
+    --advance: #FF5C6C;
+    --shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{ margin:0; padding:0; min-height:100%; }
+
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(139,124,246,0.25), transparent 45%),
+      radial-gradient(circle at 85% 15%, rgba(255,93,162,0.18), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(79,227,210,0.12), transparent 45%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  .bg-blob{
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(70px);
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.35;
+  }
+  .bg-blob-1{ width: 420px; height:420px; top:-120px; left:-100px; background: var(--violet); animation: floatBlob1 22s ease-in-out infinite; }
+  .bg-blob-2{ width: 380px; height:380px; top: 40%; right:-140px; background: var(--pink); animation: floatBlob2 26s ease-in-out infinite; }
+  .bg-blob-3{ width: 340px; height:340px; bottom:-140px; left:30%; background: var(--cyan); animation: floatBlob3 30s ease-in-out infinite; }
+  @keyframes floatBlob1{ 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(60px,80px) scale(1.15);} }
+  @keyframes floatBlob2{ 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(-70px,-40px) scale(1.1);} }
+  @keyframes floatBlob3{ 0%,100%{ transform: translate(0,0) scale(1);} 50%{ transform: translate(40px,-60px) scale(1.2);} }
+  .topnav, .wrap{ position: relative; z-index: 1; }
+
+  h1,h2,h3,.display{ font-family:'Space Grotesk', sans-serif; letter-spacing: -0.01em; }
+  .mono{ font-family:'JetBrains Mono', monospace; }
+
+  button{ font-family: inherit; cursor:pointer; }
+  button:focus-visible, textarea:focus-visible, input:focus-visible{
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+  }
+  ::selection{ background: rgba(139,124,246,0.4); }
+
+  /* ---------- Top nav ---------- */
+  .topnav{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding: 20px 40px;
+    position: sticky;
+    top:0;
+    z-index: 50;
+    background: rgba(14,11,33,0.55);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo{
+    display:flex; align-items:center; gap:10px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size: 20px;
+  }
+  .logo-mark{
+    width: 34px; height:34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--cyan), var(--violet), var(--pink));
+    display:flex; align-items:center; justify-content:center;
+    font-size: 16px;
+  }
+  .steps{
+    display:flex;
+    gap: 6px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 5px;
+    border-radius: 999px;
+  }
+  .step-pill{
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    display:flex; align-items:center; gap:7px;
+    transition: all .2s ease;
+    white-space:nowrap;
+  }
+  .step-pill .dot{
+    width:6px; height:6px; border-radius:50%;
+    background: var(--text-dim);
+  }
+  .step-pill.active{
+    background: linear-gradient(135deg, var(--violet), var(--pink));
+    color: #fff;
+  }
+  .step-pill.active .dot{ background:#fff; }
+  .step-pill.done{ color: var(--easy); }
+  .step-pill.done .dot{ background: var(--easy); }
+
+  /* ---------- Main container ---------- */
+  .wrap{ max-width: 1080px; margin: 0 auto; padding: 48px 24px 80px; }
+  .view{ display:none; animation: fadeUp .35s ease; }
+  .view.active{ display:block; }
+  @keyframes fadeUp{ from{opacity:0; transform: translateY(10px);} to{opacity:1; transform:none;} }
+
+  .hero{ text-align:center; margin-bottom: 48px; }
+  .hero .kicker{
+    display:inline-block;
+    font-size: 12px; font-weight:600; letter-spacing:.14em; text-transform:uppercase;
+    color: var(--cyan);
+    background: rgba(79,227,210,0.1);
+    border: 1px solid rgba(79,227,210,0.25);
+    padding: 6px 16px; border-radius: 999px;
+    margin-bottom: 20px;
+  }
+  .hero h1{
+    font-size: 44px; font-weight:700; margin: 0 0 14px;
+    background: linear-gradient(135deg, #fff 20%, var(--cyan) 60%, var(--pink) 100%);
+    -webkit-background-clip: text; background-clip:text; color: transparent;
+    line-height:1.15;
+  }
+  .hero p{
+    color: var(--text-dim); font-size:16px; max-width: 560px; margin: 0 auto; line-height:1.6;
+  }
+
+  .section-label{
+    font-size: 13px; font-weight:600; text-transform:uppercase; letter-spacing:.1em;
+    color: var(--text-dim); margin: 36px 0 16px; display:flex; align-items:center; gap:10px;
+  }
+  .section-label::after{ content:''; flex:1; height:1px; background: var(--border); }
+
+  .category-block{ margin-bottom: 8px; }
+  .category-title{
+    font-size: 14px; font-weight:600; color: var(--violet); margin: 24px 0 12px;
+    display:flex; align-items:center; gap:8px;
+  }
+
+  .role-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .role-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 14px;
+    text-align:left;
+    display:flex; flex-direction:column; gap:8px;
+    transition: transform .22s cubic-bezier(.34,1.56,.64,1), border-color .18s ease, box-shadow .18s ease, background .18s ease;
+    color: var(--text);
+  }
+  .role-card .icon{ font-size: 22px; display:inline-block; transition: transform .25s ease; }
+  .role-card .name{ font-size: 13.5px; font-weight:600; line-height:1.3; }
+  .role-card:hover{ border-color: rgba(139,124,246,0.5); transform: translateY(-4px); box-shadow: 0 10px 24px rgba(139,124,246,0.18); }
+  .role-card:hover .icon{ transform: scale(1.2) rotate(-4deg); }
+  .role-card.selected{
+    background: linear-gradient(135deg, rgba(139,124,246,0.22), rgba(255,93,162,0.16));
+    border-color: var(--violet);
+    box-shadow: 0 0 0 1px var(--violet), 0 8px 20px rgba(139,124,246,0.25);
+    transform: translateY(-2px);
+  }
+
+  .diff-row{ display:grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .diff-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    text-align:left;
+    color: var(--text);
+    display:flex; flex-direction:column; gap:6px;
+    transition: all .18s ease;
+  }
+  .diff-card .diff-top{ display:flex; align-items:center; gap:8px; }
+  .diff-dot{ width:10px; height:10px; border-radius:50%; }
+  .diff-card[data-level="Easy"] .diff-dot{ background: var(--easy); }
+  .diff-card[data-level="Moderate"] .diff-dot{ background: var(--moderate); }
+  .diff-card[data-level="Advance"] .diff-dot{ background: var(--advance); }
+  .diff-title{ font-weight:700; font-size:15px; }
+  .diff-sub{ font-size: 12.5px; color: var(--text-dim); line-height:1.5; }
+  .diff-card:hover{ transform: translateY(-2px); }
+  .diff-card.selected[data-level="Easy"]{ border-color: var(--easy); box-shadow: 0 0 0 1px var(--easy); background: rgba(63,221,140,0.08); }
+  .diff-card.selected[data-level="Moderate"]{ border-color: var(--moderate); box-shadow: 0 0 0 1px var(--moderate); background: rgba(255,184,76,0.08); }
+  .diff-card.selected[data-level="Advance"]{ border-color: var(--advance); box-shadow: 0 0 0 1px var(--advance); background: rgba(255,92,108,0.08); }
+
+  .chip-row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .chip{
+    padding: 10px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    font-size: 13.5px;
+    color: var(--text-dim);
+    font-weight:500;
+  }
+  .chip.selected{
+    background: linear-gradient(135deg, var(--violet), var(--pink));
+    color: #fff;
+    border-color: transparent;
+  }
+
+  .field{ margin: 20px 0; }
+  .field label{ display:block; font-size:13px; font-weight:600; color: var(--text-dim); margin-bottom:8px; }
+  input[type=text]{
+    width:100%;
+    padding: 13px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04);
+    color: var(--text);
+    font-size: 14px;
+  }
+  input[type=text]::placeholder{ color: #6E6690; }
+
+  .cta-row{ display:flex; justify-content:center; margin-top: 40px; }
+  .btn-primary{
+    background: linear-gradient(135deg, var(--cyan), var(--violet), var(--pink));
+    background-size: 200% 200%;
+    color: #0E0B21;
+    border:none;
+    padding: 15px 34px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: 0 10px 30px rgba(139,124,246,0.35);
+    transition: all .2s ease;
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .btn-primary::before{
+    content:'';
+    position:absolute; top:0; left:-60%; width:40%; height:100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform: skewX(-20deg);
+    transition: left .6s ease;
+    z-index: 1;
+  }
+  .btn-primary:hover::before{ left: 130%; }
+  .btn-primary:hover{ transform: translateY(-2px); box-shadow: 0 14px 36px rgba(139,124,246,0.5); background-position: 100% 50%; }
+  .btn-primary:disabled{ opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+  .btn-secondary{
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 14px 26px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight:600;
+  }
+  .btn-secondary:hover{ border-color: var(--violet); }
+
+  .card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 30px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ---------- Voice UI ---------- */
+  .voice-note{ font-size:12.5px; color: var(--text-dim); margin: 10px 0 0; }
+  .voice-q-row{ display:flex; align-items:center; gap:14px; margin: 10px 0 18px; }
+  .btn-voice-mini{
+    background: rgba(255,255,255,0.05); border:1px solid var(--border); color: var(--text);
+    padding: 8px 14px; border-radius: 999px; font-size:12.5px; font-weight:600;
+  }
+  .btn-voice-mini:hover{ border-color: var(--cyan); }
+  .voice-hint{ font-size:12.5px; color: var(--cyan); font-weight:600; }
+  .voice-answer-row{ display:flex; align-items:center; gap:14px; margin-top:10px; flex-wrap:wrap; }
+  .btn-mic{
+    background: rgba(255,93,162,0.12); border:1px solid rgba(255,93,162,0.4); color: var(--pink);
+    padding: 10px 18px; border-radius: 999px; font-size:13px; font-weight:700;
+    transition: all .15s ease;
+  }
+  .btn-mic:hover{ background: rgba(255,93,162,0.2); }
+  .btn-mic.recording{
+    background: linear-gradient(135deg, var(--pink), var(--advance));
+    color:#fff; border-color: transparent;
+    animation: micPulse 1.2s infinite ease-in-out;
+  }
+  @keyframes micPulse{ 0%,100%{ box-shadow: 0 0 0 0 rgba(255,93,162,0.5);} 50%{ box-shadow: 0 0 0 8px rgba(255,93,162,0);} }
+  .mic-status{ font-size:12.5px; color: var(--text-dim); }
+
+  /* ---------- Introduction / camera view ---------- */
+  .cam-layout{ display:grid; grid-template-columns: 1.1fr 1fr; gap: 24px; }
+  .cam-video-wrap{
+    position:relative; width:100%; aspect-ratio: 4/3;
+    background: #05040D; border-radius:14px; overflow:hidden; border:1px solid var(--border);
+  }
+  .cam-video-wrap video{ width:100%; height:100%; object-fit:cover; transform: scaleX(-1); }
+  .cam-video-wrap canvas{ position:absolute; top:0; left:0; width:100%; height:100%; transform: scaleX(-1); }
+  .cam-status{
+    position:absolute; top:10px; left:10px; font-size:11.5px; font-weight:600;
+    background: rgba(0,0,0,0.55); padding:5px 12px; border-radius:999px; color: var(--text-dim);
+  }
+  .cam-status.live{ color: var(--easy); }
+  .cam-side{ display:flex; flex-direction:column; }
+  .live-metric-row{ display:flex; flex-direction:column; gap:8px; }
+  .live-metric{
+    display:flex; justify-content:space-between; align-items:center;
+    background: rgba(255,255,255,0.03); border:1px solid var(--border);
+    border-radius:10px; padding:10px 14px; font-size:13px;
+  }
+  .lm-label{ color: var(--text-dim); }
+  .lm-value{ font-family:'JetBrains Mono',monospace; font-weight:600; }
+
+  @media (max-width: 720px){
+    .cam-layout{ grid-template-columns: 1fr; }
+  }
+
+  /* ---------- Interview view ---------- */
+  .interview-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 22px; flex-wrap:wrap; gap:12px; }
+  .badge-set{ display:flex; gap:8px; flex-wrap:wrap; }
+  .pill-tag{
+    font-size: 11.5px; font-weight:600; padding: 5px 12px; border-radius: 999px;
+    background: rgba(255,255,255,0.06); border:1px solid var(--border); color: var(--text-dim);
+  }
+  .pill-tag.diff-Easy{ color: var(--easy); border-color: rgba(63,221,140,0.4); }
+  .pill-tag.diff-Moderate{ color: var(--moderate); border-color: rgba(255,184,76,0.4); }
+  .pill-tag.diff-Advance{ color: var(--advance); border-color: rgba(255,92,108,0.4); }
+
+  .timer-block{ text-align:right; }
+  .q-count{ font-size:12.5px; color: var(--text-dim); }
+  .timer{
+    font-family:'JetBrains Mono',monospace; font-size: 22px; font-weight:600;
+    background: rgba(255,255,255,0.05); border:1px solid var(--border);
+    padding: 6px 16px; border-radius: 10px; margin-top:4px; display:inline-block;
+  }
+  .timer.low{ color: var(--advance); border-color: var(--advance); }
+
+  .question-box{
+    background: linear-gradient(135deg, rgba(139,124,246,0.12), rgba(255,93,162,0.08));
+    border: 1px solid rgba(139,124,246,0.3);
+    border-left: 3px solid var(--pink);
+    padding: 22px 24px;
+    border-radius: 14px;
+    font-size: 17px;
+    line-height:1.6;
+    margin-bottom: 22px;
+  }
+
+  textarea{
+    width:100%; min-height:150px; padding:16px;
+    border-radius: 12px; border: 1px solid var(--border);
+    background: rgba(255,255,255,0.04); color: var(--text);
+    font-family:'Inter',sans-serif; font-size:14px; line-height:1.6; resize:vertical;
+  }
+  .word-count{ font-size:12px; color: var(--text-dim); margin-top:6px; text-align:right; }
+
+  .loading-row{ display:flex; align-items:center; gap:12px; color: var(--text-dim); font-size:14px; padding: 10px 0; }
+  .loading-dot{ width:8px; height:8px; border-radius:50%; background: var(--pink); animation: pulse 1s infinite ease-in-out; }
+  .loading-dot:nth-child(2){ animation-delay:.15s; }
+  .loading-dot:nth-child(3){ animation-delay:.3s; }
+  @keyframes pulse{ 0%,100%{opacity:.25;} 50%{opacity:1;} }
+
+  .action-row{ display:flex; justify-content:space-between; align-items:center; margin-top: 22px; }
+
+  /* ---------- Feedback ---------- */
+  .score-panel{ display:flex; gap: 34px; align-items:center; margin-bottom: 28px; flex-wrap:wrap; }
+  .dial{ width:132px; height:132px; position:relative; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .dial svg{ position:absolute; top:0; left:0; }
+  #dialArc, #introDialArc{ transition: stroke-dashoffset 1.4s cubic-bezier(.16,1,.3,1); }
+  .dial-score{ font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700; z-index:1; transition: text-shadow .4s ease; }
+  .dial.celebrate{ animation: dialCelebrate .6s ease; }
+  @keyframes dialCelebrate{ 0%{ transform: scale(0.85); } 60%{ transform: scale(1.08); } 100%{ transform: scale(1); } }
+  .dial-label{ position:absolute; bottom:-22px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color: var(--text-dim); width:100%; text-align:center; }
+  .verdict-title{ font-size:22px; font-weight:700; margin-bottom:4px; }
+  .verdict-sub{ font-size:14px; color: var(--text-dim); }
+
+  .feedback-list{ display:flex; flex-direction:column; gap:14px; }
+  .feedback-item{ display:flex; gap:12px; padding:14px 16px; background: rgba(255,255,255,0.03); border-radius:12px; border:1px solid var(--border); }
+  .feedback-item .tag{ font-size:10px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; padding:4px 9px; border-radius:6px; height:fit-content; white-space:nowrap; }
+  .tag.strength{ background: rgba(63,221,140,0.15); color: var(--easy); }
+  .tag.improve{ background: rgba(255,92,108,0.15); color: var(--advance); }
+  .feedback-item p{ margin:0; font-size:14px; line-height:1.55; color: var(--text); }
+
+  /* ---------- Dashboard ---------- */
+  .stat-row{ display:grid; grid-template-columns: repeat(3,1fr); gap:16px; margin-bottom: 26px; }
+  .stat-card{ background: var(--panel); border:1px solid var(--border); border-radius:14px; padding:20px; }
+  .stat-num{ font-family:'Space Grotesk',sans-serif; font-size:30px; font-weight:700;
+    background: linear-gradient(135deg, var(--cyan), var(--pink)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .stat-label{ font-size:12px; color: var(--text-dim); margin-top:2px; }
+
+  .history-row{ display:grid; grid-template-columns: 78px 1fr 130px 90px; align-items:center; gap:14px; padding:13px 0; border-bottom:1px solid var(--border); }
+  .history-row:last-child{ border-bottom:none; }
+  .history-date{ font-size:12px; color: var(--text-dim); font-family:'JetBrains Mono',monospace; }
+  .history-meta{ font-size:12.5px; color: var(--text-dim); }
+  .history-meta b{ color: var(--text); }
+  .bar-track{ height:8px; background: rgba(255,255,255,0.06); border-radius:999px; overflow:hidden; }
+  .bar-fill{ height:100%; background: linear-gradient(90deg, var(--cyan), var(--pink)); border-radius:999px; }
+  .history-score{ font-family:'JetBrains Mono',monospace; font-size:13px; text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
+  .intro-badge{ font-family:'Inter',sans-serif; font-size:10.5px; color: var(--violet); font-weight:600; }
+
+  @media (max-width: 720px){
+    .topnav{ padding: 16px 18px; flex-direction:column; gap:14px; }
+    .steps{ overflow-x:auto; max-width:100%; }
+    .hero h1{ font-size:30px; }
+    .diff-row{ grid-template-columns: 1fr; }
+    .stat-row{ grid-template-columns: 1fr; }
+    .score-panel{ flex-direction:column; align-items:flex-start; }
+    .history-row{ grid-template-columns: 60px 1fr 50px; }
+    .history-meta{ display:none; }
+  }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
+  /* ---------- Premium editorial refresh ---------- */
+  :root{
+    --bg-1:#11110f;
+    --bg-2:#191713;
+    --panel:rgba(255,255,255,.055);
+    --panel-solid:#211f1a;
+    --border:rgba(236,224,197,.14);
+    --text:#f7f3e8;
+    --text-dim:#b7ad99;
+    --cyan:#d6b66f;
+    --pink:#b98b55;
+    --violet:#e5cd91;
+    --easy:#79ba8c;
+    --moderate:#d6a65f;
+    --advance:#d77b67;
+    --shadow:0 26px 70px rgba(0,0,0,.38);
+  }
+  body{
+    background:
+      radial-gradient(circle at 12% -10%,rgba(214,182,111,.15),transparent 32%),
+      radial-gradient(circle at 92% 24%,rgba(126,83,44,.13),transparent 35%),
+      linear-gradient(145deg,#0c0d0c 0%,#171612 58%,#0f100e 100%);
+  }
+  body::before{
+    content:''; position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.055;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/%3E%3C/svg%3E");
+  }
+  .bg-blob{opacity:.09;filter:blur(110px)}
+  .bg-blob-1{background:#d6b66f}.bg-blob-2{background:#8f6039}.bg-blob-3{background:#847354}
+  .topnav{
+    padding:17px 40px;background:rgba(12,13,12,.82);border-color:rgba(236,224,197,.11);
+    box-shadow:0 10px 40px rgba(0,0,0,.18)
+  }
+  .logo{font-size:19px;letter-spacing:-.03em}.logo-mark{
+    width:36px;height:36px;border-radius:50%;background:#d6b66f;color:#17140d;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.35),0 6px 18px rgba(214,182,111,.2)
+  }
+  .steps{background:rgba(255,255,255,.025);border-radius:12px;padding:4px}
+  .step-pill{border-radius:8px;padding:8px 14px}.step-pill.active{
+    background:#f0dfb2;color:#17140d;box-shadow:0 5px 16px rgba(0,0,0,.2)
+  }
+  .step-pill.active .dot{background:#5e491b}.wrap{max-width:1120px;padding-top:58px}
+  .hero{margin-bottom:52px}.hero .kicker{
+    color:#d6b66f;background:rgba(214,182,111,.07);border-color:rgba(214,182,111,.3);
+    border-radius:6px;letter-spacing:.18em
+  }
+  .hero h1{
+    font-size:clamp(2.35rem,5vw,3.65rem);line-height:1.04;letter-spacing:-.055em;
+    background:linear-gradient(105deg,#fffaf0 12%,#ead7a8 78%);-webkit-background-clip:text;background-clip:text
+  }
+  .hero p{font-size:1rem;line-height:1.75;color:#aaa18f}
+  .section-label{color:#8f8778;letter-spacing:.16em}.category-title{color:#d6b66f}
+  .role-grid{gap:10px}.role-card,.diff-card,.card,.stat-card{
+    background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.025));
+    border-color:rgba(236,224,197,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.025)
+  }
+  .role-card{border-radius:10px;padding:18px 16px}.role-card .icon{filter:saturate(.7)}
+  .role-card:hover{border-color:rgba(214,182,111,.48);box-shadow:0 14px 34px rgba(0,0,0,.25)}
+  .role-card.selected{background:linear-gradient(145deg,rgba(214,182,111,.18),rgba(89,65,28,.12));border-color:#d6b66f;box-shadow:0 0 0 1px rgba(214,182,111,.32),0 16px 36px rgba(0,0,0,.28)}
+  .diff-card,.card,.stat-card{border-radius:12px}.chip{border-radius:8px}.chip.selected{
+    background:#d6b66f;color:#17140d;border-color:#e2ca91;box-shadow:0 7px 18px rgba(0,0,0,.18)
+  }
+  input[type=text],textarea{background:rgba(0,0,0,.18);border-color:rgba(236,224,197,.16);border-radius:8px}
+  input[type=text]:focus,textarea:focus{border-color:#d6b66f;box-shadow:0 0 0 3px rgba(214,182,111,.09)}
+  .btn-primary{
+    background:linear-gradient(135deg,#f1dfaf,#c49a55);color:#17140d;border-radius:8px;
+    box-shadow:0 12px 28px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.45)
+  }
+  .btn-primary:hover{box-shadow:0 16px 36px rgba(0,0,0,.34);background-position:0 0}
+  .btn-secondary,.btn-voice-mini,.btn-mic{border-radius:8px}.btn-secondary:hover{border-color:#d6b66f}
+  .question-box{background:linear-gradient(135deg,rgba(214,182,111,.1),rgba(255,255,255,.025));border-color:rgba(214,182,111,.25);border-left-color:#d6b66f;border-radius:9px}
+  .timer,.live-metric,.feedback-item{border-radius:8px}.stat-num{
+    background:linear-gradient(135deg,#f5e5b8,#bd8e49);-webkit-background-clip:text;background-clip:text
+  }
+  .bar-fill{background:linear-gradient(90deg,#9f7338,#e6cf96)}.intro-badge{color:#d6b66f}
+  .feedback-answer{
+    margin-top:10px;padding:14px 16px;border-radius:8px;background:rgba(214,182,111,.055);
+    border:1px solid rgba(214,182,111,.14);font-size:14px;line-height:1.65
+  }
+  .feedback-answer strong{color:#e5cd91}.feedback-answer p{margin:6px 0;color:var(--text-dim)}
+  .path-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .path-step{padding:11px;border-radius:8px;background:rgba(255,255,255,.035);border:1px solid var(--border);font-size:13px;line-height:1.45}
+  .path-step b{display:block;color:#d6b66f;margin-bottom:4px}
+  .library-toolbar{display:grid;grid-template-columns:1fr 220px;gap:12px;margin-bottom:18px}
+  .library-search,.library-filter{width:100%;padding:13px 15px;border-radius:8px;border:1px solid var(--border);background:rgba(0,0,0,.2);color:var(--text);font:inherit}
+  .library-filter option{background:#211f1a}.library-count{font-size:13px;color:var(--text-dim);margin-bottom:14px}
+  .library-list{display:flex;flex-direction:column;gap:10px}
+  .library-item{border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.035);overflow:hidden}
+  .library-question{width:100%;padding:16px 18px;background:transparent;border:0;color:var(--text);display:flex;align-items:flex-start;gap:13px;text-align:left;font-size:15px;line-height:1.5}
+  .library-number{color:#d6b66f;font-family:'JetBrains Mono',monospace;font-size:12px;padding-top:3px;min-width:32px}
+  .library-category{margin-left:auto;color:var(--text-dim);font-size:11px;text-transform:uppercase;letter-spacing:.08em;white-space:nowrap;padding-top:3px}
+  .library-answer{display:none;padding:0 18px 18px 63px;color:var(--text-dim);font-size:14px;line-height:1.65}
+  .library-item.open .library-answer{display:block}.library-answer b{color:#e5cd91}.library-empty{text-align:center;padding:40px;color:var(--text-dim)}
+  button:focus-visible,textarea:focus-visible,input:focus-visible{outline-color:#d6b66f}
+  ::selection{background:rgba(214,182,111,.28)}
+  @media(max-width:720px){.topnav{padding:14px 16px}.wrap{padding:34px 18px 64px}.step-pill{padding:8px 11px}.card{padding:22px}.path-steps{grid-template-columns:1fr}.library-toolbar{grid-template-columns:1fr}.library-category{display:none}.library-answer{padding-left:18px}}
+</style>
+</head>
+<body>
+<div class="bg-blob bg-blob-1"></div>
+<div class="bg-blob bg-blob-2"></div>
+<div class="bg-blob bg-blob-3"></div>
+
+
+<nav class="topnav">
+  <div class="logo"><span class="logo-mark">🎯</span> PrepArena</div>
+  <div class="steps" id="stepsNav">
+    <div class="step-pill active" data-view="setup"><span class="dot"></span>Setup</div>
+    <div class="step-pill" data-view="introduction"><span class="dot"></span>Introduction</div>
+    <div class="step-pill" data-view="interview"><span class="dot"></span>Live Round</div>
+    <div class="step-pill" data-view="feedback"><span class="dot"></span>Report</div>
+    <div class="step-pill" data-view="dashboard"><span class="dot"></span>Dashboard</div>
+    <div class="step-pill" data-view="library"><span class="dot"></span>Top 100</div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- VIEW 1: SETUP -->
+  <section class="view active" id="view-setup">
+    <div class="hero">
+      <span class="kicker">AI-Powered Mock Interviews</span>
+      <h1>Walk in prepared.<br>Walk out confident.</h1>
+      <p>Pick your target job, choose a difficulty, and practice with questions scored like a real evaluator — clarity, relevance, structure and confidence.</p>
+    </div>
+
+    <div class="field">
+      <label for="candidateName">Your name</label>
+      <input type="text" id="candidateName" placeholder="e.g. Rehan Shaikh">
+    </div>
+
+    <div class="section-label">Choose your target job</div>
+    <div id="roleGridWrap"></div>
+
+    <div class="section-label">Difficulty level</div>
+    <div class="diff-row" id="diffRow">
+      <div class="diff-card selected" data-level="Easy">
+        <div class="diff-top"><span class="diff-dot"></span><span class="diff-title">Easy</span></div>
+        <div class="diff-sub">Warm-up basics. Good for your very first mock round.</div>
+      </div>
+      <div class="diff-card" data-level="Moderate">
+        <div class="diff-top"><span class="diff-dot"></span><span class="diff-title">Moderate</span></div>
+        <div class="diff-sub">Real interview pressure. Scenario and applied questions.</div>
+      </div>
+      <div class="diff-card" data-level="Advance">
+        <div class="diff-top"><span class="diff-dot"></span><span class="diff-title">Advance</span></div>
+        <div class="diff-sub">Push your limits. Deep, expert-level follow-ups.</div>
+      </div>
+    </div>
+
+    <div class="section-label">Round type</div>
+    <div class="chip-row" id="roundChips">
+      <div class="chip selected" data-round="Technical">Technical</div>
+      <div class="chip" data-round="HR">HR / Behavioural</div>
+      <div class="chip" data-round="Situational">Situational</div>
+    </div>
+
+    <div class="section-label">Number of questions</div>
+    <div class="chip-row" id="countChips">
+      <div class="chip" data-count="3">3</div>
+      <div class="chip selected" data-count="5">5</div>
+      <div class="chip" data-count="8">8</div>
+    </div>
+
+    <div class="section-label">Voice interview</div>
+    <div class="chip-row" id="voiceChips">
+      <div class="chip selected" data-voice="on">🎙️ On — question spoken aloud, answer by mic</div>
+      <div class="chip" data-voice="off">⌨️ Off — read &amp; type as usual</div>
+    </div>
+    <p class="voice-note" id="voiceUnsupportedNote" style="display:none;">
+      Your browser doesn't support voice input/output (this works best in Chrome). Falling back to text mode.
+    </p>
+
+    <div class="cta-row">
+      <button class="btn-primary" id="startBtn" disabled>Select a job to start →</button>
+    </div>
+  </section>
+
+  <!-- VIEW 1.5: INTRODUCTION (webcam confidence check) -->
+  <section class="view" id="view-introduction">
+    <div class="hero" style="margin-bottom:28px;">
+      <span class="kicker">Before the questions begin</span>
+      <h1 style="font-size:32px;">Introduce yourself on camera</h1>
+      <p style="max-width:600px; margin:0 auto; color:var(--text-dim); font-size:15px; line-height:1.6;">
+        Turn your camera on and give a 30-second self-introduction, just like you would at the start of a real interview.
+        We'll read your face for presence, eye contact and calmness while you speak — this runs entirely in your browser,
+        nothing is uploaded anywhere.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="cam-layout">
+        <div class="cam-video-wrap">
+          <video id="camVideo" autoplay muted playsinline></video>
+          <canvas id="camOverlay"></canvas>
+          <div class="cam-status" id="camStatus">Camera off</div>
+        </div>
+
+        <div class="cam-side">
+          <div class="field" style="margin-top:0;">
+            <label>Live read</label>
+            <div class="live-metric-row">
+              <div class="live-metric"><span class="lm-label">Face visible</span><span class="lm-value" id="lmFace">—</span></div>
+              <div class="live-metric"><span class="lm-label">Expression</span><span class="lm-value" id="lmExpr">—</span></div>
+              <div class="live-metric"><span class="lm-label">Steadiness</span><span class="lm-value" id="lmSteady">—</span></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Time left</label>
+            <div class="timer" id="introTimer">00:30</div>
+          </div>
+
+          <div class="field" style="flex:1;">
+            <label for="introText">Type key points of your intro (optional)</label>
+            <textarea id="introText" style="min-height:90px;" placeholder="e.g. Final-year BSc CS student, strong in Python, looking for an SDE role..."></textarea>
+          </div>
+
+          <button class="btn-primary" id="camStartBtn" style="width:100%;">Turn on camera & start</button>
+          <button class="btn-secondary" id="camSkipBtn" style="width:100%; margin-top:10px;">Skip this step →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW 2: INTERVIEW -->
+  <section class="view" id="view-interview">
+    <div class="card">
+      <div class="interview-head">
+        <div>
+          <div class="badge-set">
+            <span class="pill-tag" id="roleTag">Role</span>
+            <span class="pill-tag" id="roundTag">Round</span>
+            <span class="pill-tag" id="diffTag">Difficulty</span>
+          </div>
+          <h1 style="font-size:24px; margin: 10px 0 0;">Live Round</h1>
+        </div>
+        <div class="timer-block">
+          <div class="q-count" id="qCount">Question 1 / 5</div>
+          <div class="timer" id="timer">02:00</div>
+        </div>
+      </div>
+
+      <div class="question-box" id="questionText">Loading question…</div>
+      <div class="voice-q-row">
+        <button class="btn-voice-mini" id="replayQBtn" type="button">🔊 Replay question</button>
+        <span class="voice-hint" id="speakingHint" style="display:none;">🔈 Speaking…</span>
+      </div>
+
+      <textarea id="answerBox" placeholder="Type your answer here, or tap the mic to speak it. Aim for 3–5 sentences — structure it like: situation, action, result."></textarea>
+      <div class="voice-answer-row">
+        <button class="btn-mic" id="micBtn" type="button">🎤 Speak your answer</button>
+        <span class="mic-status" id="micStatus">Voice answers auto-submit after 5 seconds of silence.</span>
+        <div class="word-count" style="margin-left:auto;"><span id="wordCount">0</span> words</div>
+      </div>
+
+      <div id="loadingRow" class="loading-row" style="display:none;">
+        <span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span>
+        Evaluating your answer…
+      </div>
+
+      <div class="action-row">
+        <button class="btn-secondary" id="skipBtn">Skip question</button>
+        <button class="btn-primary" id="submitBtn">Submit answer</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW 3: FEEDBACK -->
+  <section class="view" id="view-feedback">
+    <div class="hero" style="margin-bottom:28px;">
+      <span class="kicker">Round complete</span>
+      <h1 style="font-size:32px;">Your feedback report</h1>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="score-panel">
+        <div class="dial">
+          <svg width="132" height="132" viewBox="0 0 132 132">
+            <circle cx="66" cy="66" r="56" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12"/>
+            <circle id="dialArc" cx="66" cy="66" r="56" fill="none" stroke="url(#gradArc)" stroke-width="12"
+              stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="352"
+              transform="rotate(-90 66 66)"/>
+            <defs>
+              <linearGradient id="gradArc" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4FE3D2"/>
+                <stop offset="100%" stop-color="#FF5DA2"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="dial-score" id="dialScore">0%</div>
+          <div class="dial-label">Interview score</div>
+        </div>
+        <div>
+          <span class="pill-tag" style="margin-bottom:8px; display:inline-block;">📝 Answer Content</span>
+          <div class="verdict-title" id="verdictTitle">Solid attempt</div>
+          <div class="verdict-sub" id="verdictSub">Based on 5 answered questions.</div>
+        </div>
+      </div>
+      <div class="feedback-list" id="feedbackList"></div>
+    </div>
+
+    <div class="card intro-score-card" id="introScoreCard" style="margin-bottom:24px; display:none;">
+      <div class="score-panel">
+        <div class="dial dial-intro">
+          <svg width="132" height="132" viewBox="0 0 132 132">
+            <circle cx="66" cy="66" r="56" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="12"/>
+            <circle id="introDialArc" cx="66" cy="66" r="56" fill="none" stroke="url(#gradArcIntro)" stroke-width="12"
+              stroke-linecap="round" stroke-dasharray="352" stroke-dashoffset="352"
+              transform="rotate(-90 66 66)"/>
+            <defs>
+              <linearGradient id="gradArcIntro" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#8B7CF6"/>
+                <stop offset="100%" stop-color="#3FDD8C"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="dial-score" id="introDialScore">0%</div>
+          <div class="dial-label">Confidence score</div>
+        </div>
+        <div>
+          <span class="pill-tag" style="margin-bottom:8px; display:inline-block; color:var(--violet); border-color:rgba(139,124,246,0.4);">🎥 Self-Introduction</span>
+          <div class="verdict-title" id="introVerdictTitle">Composed</div>
+          <div class="verdict-sub">Scored separately from your answers — presence, expression &amp; steadiness while you introduced yourself.</div>
+        </div>
+      </div>
+      <div class="feedback-list" id="introFeedbackList"></div>
+    </div>
+
+    <div class="cta-row" style="gap:14px;">
+      <button class="btn-secondary" id="retryBtn">Do another round</button>
+      <button class="btn-primary" id="toDashBtn">View dashboard →</button>
+    </div>
+  </section>
+
+  <!-- VIEW 4: DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="hero" style="margin-bottom:28px;">
+      <span class="kicker">Your history</span>
+      <h1 style="font-size:32px;">Progress dashboard</h1>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-label">Rounds completed</div></div>
+      <div class="stat-card"><div class="stat-num" id="statAvg">0%</div><div class="stat-label">Average score</div></div>
+      <div class="stat-card"><div class="stat-num" id="statBest">0%</div><div class="stat-label">Best round</div></div>
+    </div>
+
+    <div class="card">
+      <div id="historyEmpty" style="color:var(--text-dim); font-size:14px;">No rounds yet — complete one to see it appear here.</div>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <!-- VIEW 5: TOP 100 QUESTION LIBRARY -->
+  <section class="view" id="view-library">
+    <div class="hero" style="margin-bottom:28px;">
+      <span class="kicker">Interview essentials</span>
+      <h1 style="font-size:32px;">Top 100 interview questions</h1>
+      <p>Search the questions employers ask most often. Open any question to see a strong answer structure and a practical response tip.</p>
+    </div>
+    <div class="card">
+      <div class="library-toolbar">
+        <input class="library-search" id="librarySearch" type="search" placeholder="Search questions, skills, or topics…" aria-label="Search top interview questions">
+        <select class="library-filter" id="libraryFilter" aria-label="Filter question category">
+          <option value="all">All categories</option>
+        </select>
+      </div>
+      <div class="library-count" id="libraryCount">100 questions</div>
+      <div class="library-list" id="libraryList"></div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* =========================================================
+   PREPARENA — FRONTEND (vanilla JS, no backend wired yet)
+   Look for // >>> BACKEND CALL GOES HERE to wire up your
+   Flask + Claude/OpenAI API endpoints later.
+   ========================================================= */
+
+// ---- Job categories & roles (30+ roles across 8 categories) ----
+const CATEGORIES = [
+  { key: "tech", title: "💻 Tech & Engineering (Software)", roles: [
+    { name: "Software Engineer", icon: "💻" },
+    { name: "Web Developer", icon: "🌐" },
+    { name: "Mobile App Developer", icon: "📱" },
+    { name: "Data Analyst", icon: "📊" },
+    { name: "Data Scientist", icon: "🔬" },
+    { name: "DevOps Engineer", icon: "⚙️" },
+    { name: "Cybersecurity Analyst", icon: "🔒" },
+    { name: "QA / Test Engineer", icon: "🧪" },
+  ]},
+  { key: "core-engg", title: "🏗️ Core Engineering", roles: [
+    { name: "Mechanical Engineer", icon: "🔧" },
+    { name: "Electrical Engineer", icon: "⚡" },
+    { name: "Civil Engineer", icon: "🏗️" },
+    { name: "Electronics Engineer", icon: "📡" },
+  ]},
+  { key: "govt", title: "🏛️ Government & Public Sector", roles: [
+    { name: "SSC / Govt Officer Post", icon: "🏛️" },
+    { name: "Bank PO / Clerk", icon: "🏦" },
+    { name: "Civil Services (UPSC)", icon: "🎖️" },
+    { name: "Railway Recruitment", icon: "🚂" },
+    { name: "Defence / Police", icon: "🛡️" },
+  ]},
+  { key: "business", title: "📈 Business & Management", roles: [
+    { name: "Product Manager", icon: "📈" },
+    { name: "Business Analyst", icon: "📋" },
+    { name: "Operations Manager", icon: "🗂️" },
+    { name: "Finance / Accounting", icon: "💰" },
+    { name: "Management Consultant", icon: "💼" },
+  ]},
+  { key: "hr-sales", title: "🤝 HR, Sales & Marketing", roles: [
+    { name: "HR Generalist", icon: "🤝" },
+    { name: "Marketing Executive", icon: "📣" },
+    { name: "Sales Executive", icon: "💬" },
+    { name: "Customer Support", icon: "🎧" },
+  ]},
+  { key: "creative", title: "🎨 Creative & Design", roles: [
+    { name: "Content Writer", icon: "✍️" },
+    { name: "Graphic Designer", icon: "🎨" },
+    { name: "UI/UX Designer", icon: "🖌️" },
+  ]},
+  { key: "growth", title: "🌱 Communication & Personal Growth", roles: [
+    { name: "English & Personal Development", icon: "🌱" },
+  ]},
+  { key: "health-law", title: "⚖️ Healthcare, Law & Teaching", roles: [
+    { name: "Nursing / Healthcare", icon: "🩺" },
+    { name: "Law / Legal Associate", icon: "⚖️" },
+    { name: "Teaching / Lecturer", icon: "📚" },
+  ]},
+];
+
+// map each role name -> question category key
+const ROLE_TO_QCAT = {};
+CATEGORIES.forEach(cat => cat.roles.forEach(r => ROLE_TO_QCAT[r.name] = cat.key));
+
+// ---- Question bank: [category][round][difficulty] -> array of questions ----
+const QBANK = {
+  "tech": {
+    "Technical": {
+      "Easy": [
+        "What is the difference between a compiler and an interpreter?",
+        "Explain what an array is and how it differs from a linked list.",
+        "What does 'debugging' mean, and how do you usually approach it?",
+        "What is the difference between frontend and backend development?",
+        "Explain what an API is, in simple terms."
+      ],
+      "Moderate": [
+        "Walk me through how you would design a URL shortener at a high level.",
+        "How would you optimize a webpage that is loading slowly?",
+        "Explain the difference between SQL and NoSQL databases, with an example use case.",
+        "Describe a bug you fixed recently and your debugging process.",
+        "How do you handle merge conflicts in a team project using Git?"
+      ],
+      "Advance": [
+        "Design a scalable system for a ride-sharing app's live location tracking.",
+        "How would you handle database sharding for a rapidly growing application?",
+        "Explain CAP theorem and how it influences your database choice.",
+        "How would you design a rate limiter for a public API?",
+        "Walk through trade-offs between microservices and a monolithic architecture."
+      ]
+    },
+    "HR": {
+      "Easy": [
+        "Why do you want to work in the tech industry?",
+        "Tell me about yourself and your interest in this field.",
+        "What are your strengths as a team member?",
+        "How do you usually spend time outside academics/work?",
+        "What motivated you to choose this career path?"
+      ],
+      "Moderate": [
+        "Tell me about a time you disagreed with a teammate. How did you resolve it?",
+        "Describe a project you're proud of and what you'd do differently.",
+        "How do you handle tight deadlines?",
+        "Tell me about a time you failed at something. What did you learn?",
+        "How do you stay updated with new technology?"
+      ],
+      "Advance": [
+        "Tell me about a time you had to convince a senior stakeholder to change technical direction.",
+        "Describe a situation where you had to make a decision with incomplete information.",
+        "How do you mentor a junior teammate who is struggling?",
+        "Tell me about a time a project failed. How did you handle the aftermath?",
+        "How do you balance technical debt against shipping speed under pressure?"
+      ]
+    },
+    "Situational": {
+      "Easy": [
+        "If your code doesn't work as expected, what's the first thing you check?",
+        "If a teammate asks for help while you're busy, what do you do?",
+        "How would you explain a technical concept to a non-technical person?",
+        "What would you do if you didn't understand a task assigned to you?",
+        "How would you prioritize two tasks due the same day?"
+      ],
+      "Moderate": [
+        "Your feature is ready but QA finds a critical bug the night before release. What do you do?",
+        "A teammate keeps missing deadlines and it's affecting your work. How do you handle it?",
+        "You realize a design decision you made earlier was wrong. How do you address it now?",
+        "Your manager assigns you a task outside your usual skill set. How do you respond?",
+        "You disagree with the tech lead's approach. How do you raise it professionally?"
+      ],
+      "Advance": [
+        "Production goes down at 2 AM and you're on call. Walk me through your response.",
+        "You discover a serious security vulnerability right before a major client demo. What do you do?",
+        "Two senior engineers disagree on architecture and you must make the final call. How?",
+        "Your team is understaffed and over-committed for the quarter. How do you handle stakeholders?",
+        "You find out a shipped feature has been silently corrupting user data for a week. What's your plan?"
+      ]
+    }
+  },
+  "core-engg": {
+    "Technical": {
+      "Easy": [
+        "What is the difference between stress and strain?",
+        "Explain Ohm's Law in simple terms.",
+        "What is the purpose of a factor of safety in design?",
+        "What's the difference between AC and DC current?",
+        "What is the role of a foundation in a building structure?"
+      ],
+      "Moderate": [
+        "How would you approach troubleshooting a machine that's overheating?",
+        "Explain the difference between series and parallel circuits with an example.",
+        "How do you ensure quality control on a construction site?",
+        "Describe a project where you had to balance cost and design requirements.",
+        "What safety protocols matter most on a factory floor?"
+      ],
+      "Advance": [
+        "How would you design a cooling system for a high-load industrial machine?",
+        "Explain load balancing considerations in electrical grid distribution.",
+        "How would you approach a structural failure investigation?",
+        "Walk through a trade-off between material cost and long-term durability in a project.",
+        "How do you manage a project when a critical vendor delivers faulty components mid-project?"
+      ]
+    },
+    "HR": {
+      "Easy": ["Why did you choose this engineering field?", "What are your strengths as an engineer?", "Tell me about yourself.", "What excites you about hands-on technical work?", "How do you handle repetitive tasks in a project?"],
+      "Moderate": ["Tell me about a time you worked under a tight project deadline.", "Describe a time you had to convince a team to follow safety protocol.", "How do you handle disagreements with a supervisor?", "Tell me about a mistake you made on a project and how you fixed it.", "How do you keep learning new tools or techniques?"],
+      "Advance": ["Tell me about a time you had to take responsibility for a costly error.", "How would you manage a team resistant to a new process?", "Describe a time you balanced safety concerns against a tight deadline.", "How do you handle being the only dissenting voice in a technical decision?", "Tell me about your biggest professional risk and its outcome."]
+    },
+    "Situational": {
+      "Easy": ["What would you do if you noticed a minor safety issue on site?", "How would you respond if given unclear instructions?", "What if a tool you need isn't working?", "How would you handle a repetitive quality check task?", "What if you're unsure about a measurement?"],
+      "Moderate": ["A machine breaks down mid-shift and delays output. What's your response?", "You spot a design flaw after construction has started. What do you do?", "A colleague skips a safety step to save time. How do you react?", "You're short on materials near a deadline. How do you proceed?", "A client requests a change that compromises safety standards. What do you do?"],
+      "Advance": ["A structural inspection reveals a critical flaw days before handover. What's your plan?", "You must choose between an expensive fix now or a risky patch to meet deadline. How do you decide?", "A subordinate hides an error to avoid blame; you find out later. How do you handle it?", "Budget cuts threaten a critical safety upgrade. How do you push back?", "An audit finds your team violated a compliance standard. What's your response?"]
+    }
+  },
+  "govt": {
+    "Technical": {
+      "Easy": ["What subjects/topics have you prepared most for this exam?", "What is the structure of the exam you're applying for?", "Name one current affairs topic you've followed recently.", "What is the role and responsibility of this post?", "What documents are required for this recruitment process?"],
+      "Moderate": ["How would you handle a large volume of casework under time pressure?", "Explain a recent government policy relevant to this post.", "How do you stay updated with current affairs for your preparation?", "What is your understanding of the department's day-to-day functioning?", "How would you verify facts before acting on a public complaint?"],
+      "Advance": ["How would you balance strict procedure with a citizen's genuine urgent need?", "Discuss a recent policy reform and its administrative implications.", "How would you handle conflicting instructions from two superiors?", "What ethical dilemmas might arise in this post, and how would you navigate them?", "How would you manage a high-pressure public-facing crisis in this role?"]
+    },
+    "HR": {
+      "Easy": ["Why do you want to join government service?", "Tell me about yourself and your background.", "What does discipline mean to you?", "Why this particular post/department?", "What are your strengths for a public service role?"],
+      "Moderate": ["Why do you want to serve in a government role rather than the private sector?", "Describe a time you had to remain calm under pressure with the public.", "How do you handle criticism from seniors or the public?", "Tell me about a time you followed a rule you personally disagreed with.", "How would you handle a colleague not doing their share of work?"],
+      "Advance": ["How would you handle a situation where political pressure conflicts with procedure?", "Describe how you'd manage a team during a public emergency.", "Tell me about a time you had to enforce an unpopular decision fairly.", "How do you maintain integrity when facing pressure to bend rules?", "How would you rebuild public trust after a departmental failure?"]
+    },
+    "Situational": {
+      "Easy": ["What would you do if a citizen approached you with a complaint?", "How would you handle a long queue of people waiting for service?", "What if you made a small error in paperwork?", "How would you respond to a rude member of the public?", "What if you were unsure of the correct procedure?"],
+      "Moderate": ["A senior asks you to bypass a rule for a 'special case.' What do you do?", "You witness a colleague accepting a bribe. How do you respond?", "A citizen is aggressive and demanding immediate action outside protocol. How do you handle it?", "You're given conflicting verbal and written instructions. What's your approach?", "How would you handle a situation involving VIP pressure to fast-track a request?"],
+      "Advance": ["You uncover corruption involving a senior officer. What's your course of action?", "A natural disaster strikes your jurisdiction with no clear chain of command. What do you do?", "You must enforce an order you believe is legally questionable. How do you proceed?", "Media misreports an incident under your watch, causing public outrage. How do you respond?", "You must choose between following orders and protecting citizens' immediate safety. What's your decision?"]
+    }
+  },
+  "business": {
+    "Technical": {
+      "Easy": ["What is the difference between a product manager and a project manager?", "What is a KPI, and why does it matter?", "Explain what a balance sheet shows.", "What is market research, and why is it important?", "What tools have you used for data or task tracking?"],
+      "Moderate": ["How would you prioritize features for a product with limited engineering resources?", "Walk me through how you'd analyze a drop in monthly revenue.", "How do you gather and use customer feedback in decision-making?", "Explain a time you used data to influence a business decision.", "How would you evaluate whether a new product idea is worth pursuing?"],
+      "Advance": ["How would you decide whether to pivot a failing product line?", "Design a pricing strategy for a new SaaS product entering a competitive market.", "How would you structure a cross-functional team to launch a product in 90 days?", "Walk through how you'd handle a major client threatening to churn.", "How would you allocate a shrinking budget across competing departments?"]
+    },
+    "HR": {
+      "Easy": ["Why are you interested in this business role?", "Tell me about yourself.", "What are your strengths in a team setting?", "What interests you about this industry?", "How do you organize your daily tasks?"],
+      "Moderate": ["Tell me about a time you had to manage competing priorities.", "Describe a time you influenced a decision without formal authority.", "How do you handle pushback from stakeholders?", "Tell me about a time a plan didn't work out as expected.", "How do you build relationships with cross-functional teams?"],
+      "Advance": ["Tell me about a time you had to deliver bad news to leadership.", "Describe managing a high-stakes negotiation.", "How do you handle a team member who disagrees with your strategy publicly?", "Tell me about the hardest trade-off decision you've made professionally.", "How do you drive alignment across teams with conflicting goals?"]
+    },
+    "Situational": {
+      "Easy": ["What would you do if two team members disagreed on an approach?", "How would you handle an unexpected change in project scope?", "What if you were given an unclear task from your manager?", "How would you handle a tight deadline with limited resources?", "What if a client asked a question you didn't know the answer to?"],
+      "Moderate": ["A key stakeholder rejects your proposal at the last minute. What do you do?", "Your project is behind schedule due to a vendor delay. How do you respond?", "A teammate takes credit for your work in a meeting. How do you handle it?", "You discover a data error after a report has been shared with leadership. What's next?", "A client wants a scope change that isn't in the budget. How do you proceed?"],
+      "Advance": ["A major client is about to churn due to a service failure. What's your recovery plan?", "You must cut 20% of your budget without losing key talent. How do you decide?", "Leadership wants a decision reversed that you still believe was correct. How do you respond?", "Two departments are blaming each other for a missed deadline. How do you mediate?", "A high-profile launch is failing in real time. Walk me through your next hour."]
+    }
+  },
+  "hr-sales": {
+    "Technical": {
+      "Easy": ["What does the recruitment process typically involve?", "What is the difference between HR and payroll functions?", "What is a sales funnel?", "What tools have you used for outreach or CRM?", "What makes a marketing campaign effective?"],
+      "Moderate": ["How would you handle onboarding for a large batch of new hires?", "Walk me through how you'd close a hesitant customer.", "How do you measure the success of a marketing campaign?", "Describe how you'd handle an employee grievance professionally.", "How would you build a sales pitch for a new product?"],
+      "Advance": ["How would you redesign a company's entire onboarding process for scale?", "Design a go-to-market strategy for a product entering a saturated market.", "How would you handle a company-wide policy change facing employee backlash?", "Walk through negotiating a high-value enterprise deal from cold outreach to close.", "How would you rebuild a sales team's morale after missing targets for two quarters?"]
+    },
+    "HR": {
+      "Easy": ["Why HR/Sales/Marketing as a career choice?", "Tell me about yourself.", "What are your strengths in dealing with people?", "How do you handle rejection?", "What motivates you in a customer-facing role?"],
+      "Moderate": ["Tell me about a time you handled a conflict between two colleagues.", "Describe a time you had to persuade someone who was resistant.", "How do you handle a difficult or upset customer?", "Tell me about a time you missed a target. What did you learn?", "How do you prioritize when everything feels urgent?"],
+      "Advance": ["Tell me about a time you had to deliver difficult feedback to a senior colleague.", "Describe handling a major client crisis under public scrutiny.", "How would you manage a team through a company restructuring?", "Tell me about your most difficult negotiation and its outcome.", "How do you maintain team morale during a prolonged sales slump?"]
+    },
+    "Situational": {
+      "Easy": ["What would you do if a customer was unhappy with a product?", "How would you handle a colleague not replying to important messages?", "What if you didn't meet a weekly target?", "How would you introduce a new product to a skeptical customer?", "What if a coworker asked for help during your busy hours?"],
+      "Moderate": ["A customer threatens to leave a bad review unless given a refund they're not entitled to. What do you do?", "Two employees file complaints against each other. How do you handle it?", "A campaign you launched underperforms significantly. What's your next step?", "A top-performing employee is toxic to team culture. How do you address it?", "A client wants a discount beyond your authority. How do you respond?"],
+      "Advance": ["A major client publicly complains on social media about your company. How do you respond?", "You must lay off part of your team while maintaining morale for the rest. How do you approach it?", "A long-standing client threatens to leave over a competitor's offer. What's your retention strategy?", "An internal HR investigation implicates a senior leader. How do you proceed?", "Sales targets were missed company-wide for two quarters. How do you present this to the board?"]
+    }
+  },
+  "creative": {
+    "Technical": {
+      "Easy": ["What tools do you use for your creative work?", "What does a typical creative workflow look like for you?", "What's the difference between UI and UX?", "How do you decide on a color palette for a project?", "What makes a piece of writing engaging?"],
+      "Moderate": ["Walk me through your process for a recent project, from brief to final output.", "How do you incorporate client feedback without losing the original vision?", "How do you balance creativity with brand guidelines?", "Describe how you'd approach designing for accessibility.", "How do you handle writer's block or creative block under deadline?"],
+      "Advance": ["How would you lead a full rebrand for an established company?", "Design a UX strategy for improving a product's onboarding conversion rate.", "How would you build a content strategy across multiple platforms with a small team?", "Walk through resolving a major creative disagreement with a client days before launch.", "How would you scale a design system across multiple product teams?"]
+    },
+    "HR": {
+      "Easy": ["Why did you choose a creative career?", "Tell me about yourself.", "What's a project you're proud of?", "How do you handle creative feedback?", "What inspires your work?"],
+      "Moderate": ["Tell me about a time a client rejected your work. How did you respond?", "Describe a time you had to meet a tight creative deadline.", "How do you handle creative differences with a team member?", "Tell me about a project that didn't go as planned.", "How do you stay inspired and avoid repeating yourself?"],
+      "Advance": ["Tell me about a time your creative vision clashed with business goals.", "Describe leading a creative team through a high-pressure rebrand.", "How do you handle a client who keeps changing their mind late in a project?", "Tell me about the riskiest creative decision you've made professionally.", "How do you mentor junior creatives while managing your own deadlines?"]
+    },
+    "Situational": {
+      "Easy": ["What would you do if you disagreed with feedback on your work?", "How would you handle a tight turnaround for a small project?", "What if a client's brief was vague?", "How would you respond to harsh criticism?", "What if you ran out of ideas mid-project?"],
+      "Moderate": ["A client wants unlimited revisions beyond the agreed scope. How do you handle it?", "Your design is rejected the night before launch. What's your plan?", "A teammate copies a competitor's work as 'inspiration.' How do you respond?", "You're asked to work in a style you're uncomfortable with. What do you do?", "A campaign underperforms right after launch. What's your next move?"],
+      "Advance": ["A major campaign you led receives public backlash. How do you respond?", "A client wants to use your work in a way that feels unethical. What's your stance?", "You must deliver a full brand overhaul in an unreasonably short timeline. How do you manage it?", "Your creative direction is overruled by leadership late in the process. How do you handle it?", "A junior designer's mistake damages a client relationship. How do you address it?"]
+    }
+  },
+  "growth": {
+    "Technical": {
+      "Easy": [
+        "Introduce yourself in English and describe one personal goal you are working toward.",
+        "What daily habit would help you improve your spoken English?",
+        "Explain the difference between confidence and fluency in communication.",
+        "Describe a book, video, or conversation that helped you learn something new.",
+        "What three words best describe the person you want to become?"
+      ],
+      "Moderate": [
+        "Describe a difficult situation in English using a clear beginning, middle, and outcome.",
+        "How would you politely disagree with someone in a professional conversation?",
+        "Explain how you identify and correct repeated mistakes in your English.",
+        "Tell me about a personal weakness you are actively turning into a strength.",
+        "Give a two-minute explanation of a topic you know well without using filler words."
+      ],
+      "Advance": [
+        "Present a persuasive argument for why communication skills should be taught in every college course.",
+        "How would you adapt your vocabulary and tone when speaking to a friend, professor, and employer?",
+        "Describe a long-term personal development plan with measurable milestones and review points.",
+        "Explain a complex idea in simple English while keeping its meaning accurate.",
+        "Reflect on a limiting belief you changed and explain the evidence that changed your mind."
+      ]
+    },
+    "HR": {
+      "Easy": [
+        "Tell me about yourself in clear and simple English.",
+        "What personal quality are you most proud of?",
+        "What motivates you to improve your communication skills?",
+        "How do you respond when someone corrects your English?",
+        "Which habit would you most like to improve this year?"
+      ],
+      "Moderate": [
+        "Tell me about a time you communicated confidently despite feeling nervous.",
+        "Describe constructive feedback you received and how you acted on it.",
+        "How do you maintain discipline when progress feels slow?",
+        "Tell me about a conversation that changed your perspective.",
+        "How would better English help you achieve your academic or career goals?"
+      ],
+      "Advance": [
+        "Describe a time your communication style caused a misunderstanding and what you learned.",
+        "How do you balance self-confidence with openness to criticism?",
+        "Tell me about a personal transformation that required consistent effort.",
+        "How would you help a teammate who is afraid to speak English in a group?",
+        "What does emotional intelligence look like during a difficult professional conversation?"
+      ]
+    },
+    "Situational": {
+      "Easy": [
+        "You forget an English word while speaking. What would you do?",
+        "You feel nervous before introducing yourself to a group. How would you prepare?",
+        "A friend laughs at your pronunciation. How would you respond?",
+        "You miss one day of your learning routine. What is your next step?",
+        "You do not understand a question in a conversation. What would you say?"
+      ],
+      "Moderate": [
+        "You must give a presentation in English next week but lack confidence. Create a preparation plan.",
+        "A group discussion moves too quickly for you to contribute. How would you enter the conversation?",
+        "You receive conflicting advice about your communication style. How would you evaluate it?",
+        "You keep repeating the same grammar mistake despite practice. What would you change?",
+        "A personal goal is taking longer than expected. How would you review and adjust it?"
+      ],
+      "Advance": [
+        "You must lead a tense meeting in English with people who have different communication styles. What is your approach?",
+        "Your confidence drops after a poor public-speaking performance. How would you recover and measure improvement?",
+        "A colleague misunderstands your direct communication as disrespectful. How would you repair the relationship?",
+        "You have thirty days to improve your professional English for an important interview. Design a complete plan.",
+        "You recognize that one of your strongest habits is now limiting your growth. How would you replace it?"
+      ]
+    }
+  },
+  "health-law": {
+    "Technical": {
+      "Easy": ["What does a typical day in this profession look like?", "What's one key skill required for this role?", "What is patient/client confidentiality, and why does it matter?", "What subjects did you study that prepared you for this field?", "What is the importance of documentation in this profession?"],
+      "Moderate": ["How would you handle a high-pressure situation involving a patient/client?", "Explain how you'd stay updated with changes in regulations or best practices.", "How do you balance empathy with professional boundaries?", "Describe a time you had to explain something complex in simple terms.", "How would you handle a disagreement with a colleague over the right course of action?"],
+      "Advance": ["How would you handle an ethically ambiguous case with no clear precedent?", "Walk through managing a crisis involving multiple stakeholders with competing interests.", "How would you advocate for a client/patient against institutional resistance?", "Describe how you'd handle a situation where following the rule causes clear harm.", "How would you lead a team through a high-stakes case under public scrutiny?"]
+    },
+    "HR": {
+      "Easy": ["Why did you choose this profession?", "Tell me about yourself.", "What draws you to helping people in this way?", "What are your strengths for this role?", "How do you handle stressful situations?"],
+      "Moderate": ["Tell me about a time you had to stay composed in a difficult situation.", "Describe a time you disagreed with a colleague's approach to a case.", "How do you handle emotionally difficult situations at work?", "Tell me about a time you made a tough call under pressure.", "How do you manage your own wellbeing in a demanding profession?"],
+      "Advance": ["Tell me about the most ethically complex situation you've faced.", "Describe leading others through a high-stakes, high-emotion case.", "How do you handle disagreeing with an institutional decision you believe is wrong?", "Tell me about a time you had to deliver very difficult news.", "How do you maintain objectivity when personally affected by a case?"]
+    },
+    "Situational": {
+      "Easy": ["What would you do if you didn't know the answer to a client/patient's question?", "How would you handle a stressful shift or caseload?", "What if a colleague made a small mistake?", "How would you comfort someone who is upset?", "What if you were unsure about the correct procedure?"],
+      "Moderate": ["A patient/client refuses recommended action against advice. What do you do?", "You notice a colleague made an error that could affect someone's outcome. How do you respond?", "You're overloaded with cases and can't give everyone full attention. What's your approach?", "A family member demands information you're not authorized to share. How do you respond?", "You disagree with a supervisor's directive on ethical grounds. What do you do?"],
+      "Advance": ["You discover a colleague has been falsifying records. What's your course of action?", "A high-profile case puts you under media and public scrutiny. How do you manage it?", "You must choose between institutional policy and what you believe is right for the individual. How do you decide?", "A resource shortage forces you to prioritize between two urgent cases. How do you make that call?", "You're asked to compromise on ethics to protect the institution's reputation. What's your response?"]
+    }
+  }
+};
+
+// ---- Curated Top 100: 10 practical categories × 10 questions ----
+const TOP_100_GROUPS = {
+  "About You": [
+    "Tell me about yourself.", "Walk me through your resume.", "How would you describe yourself in three words?",
+    "What makes you unique?", "What are you passionate about?", "What motivates you?",
+    "What is your greatest professional achievement?", "What are your core values?",
+    "How has your education prepared you for this role?", "What should I know about you that is not on your resume?"
+  ],
+  "Role & Company": [
+    "Why do you want this job?", "Why do you want to work for our company?", "What do you know about our organization?",
+    "Why should we hire you?", "What interests you about this industry?", "What attracted you to this position?",
+    "Which part of this role will be most challenging for you?", "What would you aim to accomplish in your first 90 days?",
+    "How does this position fit your career plan?", "What questions do you have for us?"
+  ],
+  "Strengths & Growth": [
+    "What is your greatest strength?", "What is your biggest weakness?", "Which skill are you currently improving?",
+    "How do you respond to constructive criticism?", "Tell me about a mistake you made and what you learned.",
+    "Describe a time you failed.", "What would your manager say you need to improve?",
+    "How do you measure your own performance?", "What have you learned in the past year?",
+    "Tell me about a time you stepped outside your comfort zone."
+  ],
+  "Experience": [
+    "Tell me about a project you are proud of.", "Describe your most relevant experience for this role.",
+    "What was your biggest contribution to your last team?", "Tell me about a difficult target you achieved.",
+    "Describe a process you improved.", "Tell me about a time you took initiative.",
+    "What is the most complex problem you have solved?", "Tell me about a time you learned something quickly.",
+    "Describe a decision you made using data.", "Tell me about a time your work created measurable impact."
+  ],
+  "Teamwork": [
+    "Tell me about a successful team project.", "Describe a conflict with a teammate and how you resolved it.",
+    "How do you work with someone whose style differs from yours?", "Tell me about a time you supported a struggling teammate.",
+    "How do you build trust in a new team?", "Describe a time you disagreed with your manager.",
+    "How do you give difficult feedback?", "Tell me about a time you received help from others.",
+    "What role do you usually take in a team?", "How do you handle a teammate who is not contributing?"
+  ],
+  "Communication": [
+    "How do you explain a complex idea to a non-expert?", "Tell me about a time you persuaded someone.",
+    "Describe a presentation you delivered successfully.", "How do you handle misunderstandings at work?",
+    "Tell me about a difficult conversation you managed.", "How do you communicate bad news?",
+    "How do you make sure your message is understood?", "Describe a time you adapted your communication style.",
+    "How do you participate in a discussion when you disagree?", "Tell me about a time your communication made a difference."
+  ],
+  "Leadership": [
+    "Describe your leadership style.", "Tell me about a time you led without authority.",
+    "How do you motivate others?", "Tell me about a difficult decision you made as a leader.",
+    "How do you delegate work?", "Describe a time you helped someone grow.",
+    "How do you handle underperformance?", "Tell me about a time you managed change.",
+    "How do you create alignment around a goal?", "What makes an effective leader?"
+  ],
+  "Problem Solving": [
+    "How do you approach an unfamiliar problem?", "Tell me about a creative solution you developed.",
+    "Describe a time you made a decision with incomplete information.", "How do you find the root cause of a problem?",
+    "Tell me about a time your first solution did not work.", "How do you balance speed and accuracy?",
+    "Describe a problem you prevented before it happened.", "How do you compare multiple possible solutions?",
+    "Tell me about a time you challenged an existing process.", "What do you do when you do not know the answer?"
+  ],
+  "Work Habits": [
+    "How do you prioritize competing deadlines?", "How do you manage stress?", "How do you stay organized?",
+    "Describe a time you worked under pressure.", "How do you maintain quality during repetitive work?",
+    "How do you respond when priorities suddenly change?", "What does a productive workday look like for you?",
+    "How do you stay focused when working independently?", "Tell me about a time you missed a deadline.",
+    "How do you balance multiple projects?"
+  ],
+  "Career & Closing": [
+    "Where do you see yourself in five years?", "What are your short-term career goals?",
+    "Why are you leaving your current job?", "Why did you leave your previous job?",
+    "What are your salary expectations?", "Are you interviewing with other companies?",
+    "When can you start?", "Are you willing to relocate?", "What would make you accept an offer?",
+    "Is there anything else you would like us to know?"
+  ]
+};
+const TOP_100 = Object.entries(TOP_100_GROUPS).flatMap(([category, questions]) =>
+  questions.map((question, index) => ({ id: `${category}-${index}`, category, question }))
+);
+
+// ---- App state ----
+let state = {
+  name: "Guest Candidate",
+  role: null,
+  qcat: null,
+  difficulty: "Easy",
+  round: "Technical",
+  count: 5,
+  questions: [],
+  currentIndex: 0,
+  answers: [],
+  timerInterval: null,
+  timeLeft: 120,
+  history: [],
+  // introduction / face-analysis state
+  introScore: null,
+  introTags: [],
+  introSamples: [],
+  introStream: null,
+  introTimerInterval: null,
+  introTimeLeft: 30,
+  // voice interview state
+  voiceMode: true,
+  usedQuestions: [],
+  submitting: false
+};
+
+// Keep progress after refresh; corrupted or blocked storage fails safely.
+try{
+  const savedHistory = JSON.parse(localStorage.getItem('preparena-history') || '[]');
+  if(Array.isArray(savedHistory)) state.history = savedHistory.slice(-50).map(h => ({...h, date:new Date(h.date)}));
+  const savedUsed = JSON.parse(localStorage.getItem('preparena-used-questions') || '[]');
+  if(Array.isArray(savedUsed)) state.usedQuestions = savedUsed.slice(-120);
+}catch(e){ /* storage is optional */ }
+
+function saveProgress(){
+  try{
+    localStorage.setItem('preparena-history', JSON.stringify(state.history.slice(-50)));
+    localStorage.setItem('preparena-used-questions', JSON.stringify(state.usedQuestions.slice(-120)));
+  }catch(e){ /* storage is optional */ }
+}
+
+// ======================= VOICE (Text-to-Speech + Speech-to-Text) =======================
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+const voiceSupported = ('speechSynthesis' in window) && !!SpeechRecognitionAPI;
+
+if(!voiceSupported){
+  state.voiceMode = false;
+  document.getElementById('voiceUnsupportedNote').style.display = 'block';
+  document.querySelector('#voiceChips .chip[data-voice="on"]').classList.remove('selected');
+  document.querySelector('#voiceChips .chip[data-voice="on"]').style.opacity = '0.4';
+  document.querySelector('#voiceChips .chip[data-voice="on"]').style.pointerEvents = 'none';
+  document.querySelector('#voiceChips .chip[data-voice="off"]').classList.add('selected');
+}
+
+document.querySelectorAll('#voiceChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if(!voiceSupported) return;
+    document.querySelectorAll('#voiceChips .chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    state.voiceMode = chip.dataset.voice === 'on';
+  });
+});
+
+function speakText(text){
+  if(!voiceSupported || !state.voiceMode) return;
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.rate = 0.95;
+  utter.pitch = 1;
+  utter.lang = 'en-IN';
+  const hint = document.getElementById('speakingHint');
+  utter.onstart = () => { if(hint) hint.style.display = 'inline'; };
+  utter.onend = () => { if(hint) hint.style.display = 'none'; };
+  utter.onerror = () => { if(hint) hint.style.display = 'none'; };
+  window.speechSynthesis.speak(utter);
+}
+
+document.getElementById('replayQBtn').addEventListener('click', () => {
+  const q = state.questions[state.currentIndex];
+  if(q) speakText(q);
+});
+
+// ---- Speech-to-text (mic answer) ----
+let recognizer = null;
+let isRecording = false;
+let recognizedFinalText = '';
+let silenceSubmitTimer = null;
+let silenceCountdownTimer = null;
+
+function clearSilenceTimers(){
+  clearTimeout(silenceSubmitTimer);
+  clearInterval(silenceCountdownTimer);
+  silenceSubmitTimer = null;
+  silenceCountdownTimer = null;
+}
+
+function scheduleSilenceSubmit(){
+  clearSilenceTimers();
+  if(!isRecording || !answerBox.value.trim()) return;
+  let secondsLeft = 5;
+  const status = document.getElementById('micStatus');
+  status.textContent = `Listening… auto-submit in ${secondsLeft}s if silent`;
+  silenceCountdownTimer = setInterval(() => {
+    secondsLeft--;
+    if(secondsLeft > 0 && isRecording) status.textContent = `Listening… auto-submit in ${secondsLeft}s if silent`;
+  }, 1000);
+  silenceSubmitTimer = setTimeout(() => {
+    if(!isRecording || !answerBox.value.trim() || state.submitting) return;
+    clearSilenceTimers();
+    stopRecording();
+    handleSubmit(false);
+  }, 5000);
+}
+
+function setupRecognizer(){
+  if(!SpeechRecognitionAPI) return null;
+  const r = new SpeechRecognitionAPI();
+  r.continuous = true;
+  r.interimResults = true;
+  r.lang = 'en-IN';
+
+  r.onresult = (event) => {
+    let interim = '';
+    for(let i = event.resultIndex; i < event.results.length; i++){
+      const transcript = event.results[i][0].transcript;
+      if(event.results[i].isFinal){
+        recognizedFinalText += transcript + ' ';
+      } else {
+        interim += transcript;
+      }
+    }
+    answerBox.value = (recognizedFinalText + interim).trim();
+    const words = answerBox.value.trim().split(/\s+/).filter(Boolean).length;
+    document.getElementById('wordCount').textContent = answerBox.value.trim() ? words : 0;
+    scheduleSilenceSubmit();
+  };
+
+  r.onerror = (e) => {
+    const message = e.error === 'not-allowed'
+      ? 'Mic permission denied — you can still type.'
+      : 'Voice input had an issue — you can still type.';
+    stopRecording();
+    document.getElementById('micStatus').textContent = message;
+  };
+
+  r.onend = () => {
+    if(isRecording){
+      // some browsers auto-stop after a pause; restart seamlessly if user hasn't manually stopped
+      try{ r.start(); } catch(e){ stopRecording(); }
+    }
+  };
+
+  return r;
+}
+
+function startRecording(){
+  if(!SpeechRecognitionAPI) return;
+  window.speechSynthesis.cancel();
+  recognizedFinalText = answerBox.value ? answerBox.value + ' ' : '';
+  recognizer = setupRecognizer();
+  try{
+    recognizer.start();
+    isRecording = true;
+    const btn = document.getElementById('micBtn');
+    btn.textContent = '⏹ Stop recording';
+    btn.classList.add('recording');
+    document.getElementById('micStatus').textContent = 'Listening… answer submits after 5 seconds of silence';
+  } catch(e){
+    document.getElementById('micStatus').textContent = 'Could not start microphone.';
+  }
+}
+
+function stopRecording(){
+  clearSilenceTimers();
+  isRecording = false;
+  if(recognizer){ try{ recognizer.stop(); } catch(e){} }
+  const btn = document.getElementById('micBtn');
+  btn.textContent = '🎤 Speak your answer';
+  btn.classList.remove('recording');
+  document.getElementById('micStatus').textContent = SpeechRecognitionAPI
+    ? 'Voice answers auto-submit after 5 seconds of silence.'
+    : 'Voice input is unavailable in this browser.';
+}
+
+document.getElementById('micBtn').addEventListener('click', () => {
+  if(!SpeechRecognitionAPI){
+    document.getElementById('micStatus').textContent = 'Voice input isn\u2019t supported in this browser — try Chrome.';
+    return;
+  }
+  if(isRecording) stopRecording(); else startRecording();
+});
+CATEGORIES.forEach(cat => {
+  const block = document.createElement('div');
+  block.className = 'category-block';
+  block.innerHTML = `<div class="category-title">${cat.title}</div>`;
+  const grid = document.createElement('div');
+  grid.className = 'role-grid';
+  cat.roles.forEach(role => {
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'role-card';
+    card.dataset.role = role.name;
+    card.dataset.qcat = cat.key;
+    card.innerHTML = `<span class="icon">${role.icon}</span><span class="name">${role.name}</span>`;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      state.role = role.name;
+      state.qcat = cat.key;
+      updateStartButton();
+    });
+    grid.appendChild(card);
+  });
+  block.appendChild(grid);
+  roleGridWrap.appendChild(block);
+});
+
+function updateStartButton(){
+  const btn = document.getElementById('startBtn');
+  if(state.role){
+    btn.disabled = false;
+    btn.textContent = `Start ${state.difficulty} mock round →`;
+  } else {
+    btn.disabled = true;
+    btn.textContent = 'Select a job to start →';
+  }
+}
+
+// ---- Difficulty selector ----
+document.querySelectorAll('.diff-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.diff-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    state.difficulty = card.dataset.level;
+    updateStartButton();
+  });
+});
+
+// ---- Round type & count chips ----
+document.querySelectorAll('#roundChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#roundChips .chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    state.round = chip.dataset.round;
+  });
+});
+document.querySelectorAll('#countChips .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('#countChips .chip').forEach(c => c.classList.remove('selected'));
+    chip.classList.add('selected');
+    state.count = parseInt(chip.dataset.count, 10);
+  });
+});
+
+// ---- Navigation via top steps ----
+function showView(name){
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.querySelectorAll('.step-pill').forEach(r => r.classList.remove('active'));
+  const nav = document.querySelector(`.step-pill[data-view="${name}"]`);
+  if(nav) nav.classList.add('active');
+}
+document.querySelectorAll('.step-pill').forEach(item => {
+  item.addEventListener('click', () => {
+    const target = item.dataset.view;
+    if((target === 'introduction' || target === 'interview' || target === 'feedback') && !state.role){
+      showView('setup'); return;
+    }
+    if(target === 'interview' && !state.questions.length){ showView('setup'); return; }
+    if(target === 'feedback' && state.answers.length !== state.questions.length){
+      showView(state.questions.length ? 'interview' : 'setup'); return;
+    }
+    if(document.getElementById('view-interview').classList.contains('active') && target !== 'interview'){
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+      stopRecording();
+      window.speechSynthesis.cancel();
+    }
+    if(target === 'dashboard') renderDashboard();
+    if(target === 'library') renderLibrary();
+    showView(target);
+    if(target === 'interview' && state.timeLeft > 0 && !state.timerInterval) startQuestionTimer();
+  });
+});
+
+// ---- Question set builder ----
+function getQuestionSet(qcat, round, difficulty, count){
+  const category = QBANK[qcat] || {};
+  const preferred = (category[round] && category[round][difficulty]) || [];
+  const sameRound = Object.values(category[round] || {}).flat();
+  const sameLevel = Object.values(category).flatMap(rounds => rounds[difficulty] || []);
+  const allCategory = Object.values(category).flatMap(rounds => Object.values(rounds).flat());
+  const recent = new Set(state.usedQuestions.slice(-60));
+  const selected = [];
+  const addFrom = pool => {
+    [...new Set(pool)].sort(() => Math.random() - 0.5).forEach(q => {
+      if(selected.length < count && !selected.includes(q)) selected.push(q);
+    });
+  };
+  // Preserve the chosen level first, then broaden only enough to satisfy 8 without repeats.
+  addFrom(preferred.filter(q => !recent.has(q)));
+  addFrom(preferred.filter(q => recent.has(q)));
+  addFrom(sameRound.filter(q => !recent.has(q)));
+  addFrom(sameRound);
+  addFrom(sameLevel.filter(q => !recent.has(q)));
+  addFrom(sameLevel);
+  addFrom(allCategory.filter(q => !recent.has(q)));
+  addFrom(allCategory);
+  state.usedQuestions.push(...selected);
+  saveProgress();
+  return selected;
+}
+
+// ---- Start button ----
+document.getElementById('startBtn').addEventListener('click', () => {
+  const nameInput = document.getElementById('candidateName').value.trim();
+  state.name = nameInput || "Guest Candidate";
+
+  // >>> BACKEND CALL GOES HERE
+  // Replace getQuestionSet(...) with a fetch to your Flask endpoint that
+  // asks Claude/OpenAI to generate `state.count` interview questions for
+  // state.role + state.round + state.difficulty, returned as a JSON array.
+  state.questions = getQuestionSet(state.qcat, state.round, state.difficulty, state.count);
+  if(!state.questions.length){
+    alert('No questions are available for this selection yet. Please choose another role or round.');
+    return;
+  }
+  state.currentIndex = 0;
+  state.answers = [];
+
+  document.getElementById('roleTag').textContent = state.role;
+  document.getElementById('roundTag').textContent = state.round + ' Round';
+  const diffTag = document.getElementById('diffTag');
+  diffTag.textContent = state.difficulty;
+  diffTag.className = 'pill-tag diff-' + state.difficulty;
+
+  document.querySelector('.step-pill[data-view="setup"]').classList.add('done');
+  resetIntroView();
+  showView('introduction');
+});
+
+// ======================= INTRODUCTION / FACE ANALYSIS =======================
+let humanInstance = null;
+let introDetectLoopActive = false;
+
+function resetIntroView(){
+  state.introScore = null;
+  state.introTags = [];
+  state.introSamples = [];
+  state.introTimeLeft = 30;
+  document.getElementById('introText').value = '';
+  document.getElementById('camStatus').textContent = 'Camera off';
+  document.getElementById('camStatus').classList.remove('live');
+  document.getElementById('lmFace').textContent = '—';
+  document.getElementById('lmExpr').textContent = '—';
+  document.getElementById('lmSteady').textContent = '—';
+  document.getElementById('introTimer').textContent = '00:30';
+  document.getElementById('camStartBtn').disabled = false;
+  document.getElementById('camStartBtn').textContent = 'Turn on camera & start';
+}
+
+async function getHuman(){
+  if(humanInstance) return humanInstance;
+  humanInstance = new Human.Human({
+    modelBasePath: 'https://vladmandic.github.io/human-models/models/',
+    filter: { enabled: true },
+    face: {
+      enabled: true,
+      detector: { rotation: false, maxDetected: 1 },
+      mesh: { enabled: true },
+      emotion: { enabled: true },
+      iris: { enabled: false },
+      description: { enabled: false }
+    },
+    body: { enabled: false },
+    hand: { enabled: false },
+    gesture: { enabled: false },
+    segmentation: { enabled: false }
+  });
+  await humanInstance.load();
+  return humanInstance;
+}
+
+document.getElementById('camStartBtn').addEventListener('click', startIntroCapture);
+document.getElementById('camSkipBtn').addEventListener('click', () => {
+  stopIntroCamera();
+  state.introScore = null;
+  state.introTags = [{type:'improve', text:'Self-introduction camera check was skipped, so no body-language read is included in your score.'}];
+  proceedToInterview();
+});
+
+async function startIntroCapture(){
+  const btn = document.getElementById('camStartBtn');
+  btn.disabled = true;
+  btn.textContent = 'Starting camera…';
+  const statusEl = document.getElementById('camStatus');
+
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 480, height: 360 }, audio: false });
+    state.introStream = stream;
+    const video = document.getElementById('camVideo');
+    video.srcObject = stream;
+    await video.play();
+
+    statusEl.textContent = 'Loading face model…';
+    await getHuman();
+
+    statusEl.textContent = 'Live';
+    statusEl.classList.add('live');
+    btn.textContent = 'Analyzing your introduction…';
+
+    state.introSamples = [];
+    state.introTimeLeft = 30;
+    introDetectLoopActive = true;
+    runIntroDetectLoop();
+
+    state.introTimerInterval = setInterval(() => {
+      state.introTimeLeft--;
+      const m = Math.floor(Math.max(state.introTimeLeft,0) / 60).toString().padStart(2,'0');
+      const s = Math.max(state.introTimeLeft,0) % 60;
+      document.getElementById('introTimer').textContent = `${m}:${s.toString().padStart(2,'0')}`;
+      if(state.introTimeLeft <= 0){
+        clearInterval(state.introTimerInterval);
+        finishIntroCapture();
+      }
+    }, 1000);
+
+  } catch(err){
+    // Camera denied, unavailable, or model failed to load — fail gracefully
+    statusEl.textContent = 'Camera unavailable';
+    btn.textContent = 'Continue without camera →';
+    btn.disabled = false;
+    btn.onclick = () => {
+      state.introScore = null;
+      state.introTags = [{type:'improve', text:'Camera access wasn\u2019t available, so this round has no body-language read — text answers were still scored normally.'}];
+      proceedToInterview();
+    };
+  }
+}
+
+async function runIntroDetectLoop(){
+  const video = document.getElementById('camVideo');
+  const canvas = document.getElementById('camOverlay');
+  const ctx = canvas.getContext('2d');
+
+  while(introDetectLoopActive){
+    if(video.videoWidth){
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      try{
+        const result = await humanInstance.detect(video);
+        const face = result.face && result.face[0];
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+
+        if(face){
+          const [x,y,w,h] = face.box;
+          ctx.strokeStyle = '#4FE3D2';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(x,y,w,h);
+
+          const topEmotion = (face.emotion && face.emotion.length)
+            ? face.emotion.reduce((a,b) => a.score > b.score ? a : b)
+            : null;
+
+          document.getElementById('lmFace').textContent = 'Yes';
+          document.getElementById('lmExpr').textContent = topEmotion ? topEmotion.emotion : '—';
+
+          state.introSamples.push({
+            faceDetected: true,
+            emotion: topEmotion ? topEmotion.emotion : 'neutral',
+            centerX: x + w/2,
+            centerY: y + h/2,
+            boxW: w
+          });
+        } else {
+          document.getElementById('lmFace').textContent = 'No';
+          document.getElementById('lmExpr').textContent = '—';
+          state.introSamples.push({ faceDetected: false });
+        }
+
+        // steadiness = inverse of how much the face center has jumped over the last few samples
+        const recent = state.introSamples.filter(s => s.faceDetected).slice(-8);
+        if(recent.length >= 2){
+          let totalMove = 0;
+          for(let i=1;i<recent.length;i++){
+            const dx = recent[i].centerX - recent[i-1].centerX;
+            const dy = recent[i].centerY - recent[i-1].centerY;
+            totalMove += Math.sqrt(dx*dx + dy*dy);
+          }
+          const avgMove = totalMove / (recent.length - 1);
+          const steadyPct = Math.max(0, Math.min(100, Math.round(100 - avgMove * 2)));
+          document.getElementById('lmSteady').textContent = steadyPct + '%';
+        }
+      } catch(e){ /* skip a bad frame silently */ }
+    }
+    await new Promise(r => setTimeout(r, 350));
+  }
+}
+
+function stopIntroCamera(){
+  introDetectLoopActive = false;
+  clearInterval(state.introTimerInterval);
+  if(state.introStream){
+    state.introStream.getTracks().forEach(t => t.stop());
+    state.introStream = null;
+  }
+}
+
+function finishIntroCapture(){
+  stopIntroCamera();
+
+  const total = state.introSamples.length;
+  const withFace = state.introSamples.filter(s => s.faceDetected);
+  const presencePct = total ? Math.round((withFace.length / total) * 100) : 0;
+
+  const emotionCounts = {};
+  withFace.forEach(s => { emotionCounts[s.emotion] = (emotionCounts[s.emotion] || 0) + 1; });
+  const positiveEmotions = ['happy','neutral','surprise'];
+  const positiveCount = withFace.filter(s => positiveEmotions.includes(s.emotion)).length;
+  const positivePct = withFace.length ? Math.round((positiveCount / withFace.length) * 100) : 0;
+
+  // steadiness across the whole session
+  let steadySum = 0, steadyN = 0;
+  for(let i=1;i<withFace.length;i++){
+    const dx = withFace[i].centerX - withFace[i-1].centerX;
+    const dy = withFace[i].centerY - withFace[i-1].centerY;
+    steadySum += Math.sqrt(dx*dx + dy*dy);
+    steadyN++;
+  }
+  const avgMove = steadyN ? steadySum / steadyN : 0;
+  const steadyPct = Math.max(0, Math.min(100, Math.round(100 - avgMove * 2)));
+
+  const introScore = total === 0 ? 0 : Math.round(presencePct * 0.45 + positivePct * 0.30 + steadyPct * 0.25);
+  state.introScore = introScore;
+
+  let dominantEmotion = null, dominantCount = 0;
+  Object.keys(emotionCounts).forEach(e => { if(emotionCounts[e] > dominantCount){ dominantCount = emotionCounts[e]; dominantEmotion = e; } });
+
+  const tags = [];
+  if(presencePct >= 80) tags.push({type:'strength', text:`Your face was clearly visible for ${presencePct}% of your introduction — good, consistent camera presence.`});
+  else tags.push({type:'improve', text:`Your face was only detected ${presencePct}% of the time — move about 20cm closer to the camera and make sure your whole face stays in frame.`});
+
+  if(positivePct >= 65){
+    tags.push({type:'strength', text: dominantEmotion ? `Your dominant expression was "${dominantEmotion}" — calm and steady, which reads as confident.` : 'Your expression stayed calm and positive through most of the introduction.'});
+  } else {
+    const emotionNote = dominantEmotion && dominantEmotion !== 'neutral' ? ` (mostly reading as "${dominantEmotion}")` : '';
+    tags.push({type:'improve', text:`Some tension showed in your expression${emotionNote} — try a small smile and one slow breath before you start speaking.`});
+  }
+
+  if(steadyPct >= 70) tags.push({type:'strength', text:'You held a steady, composed position — very little fidgeting or camera movement.'});
+  else tags.push({type:'improve', text:'There was a fair amount of head movement — rest your elbows on the desk and sit slightly further back so small shifts matter less.'});
+
+  state.introTags = tags;
+  proceedToInterview();
+}
+
+function proceedToInterview(){
+  document.querySelector('.step-pill[data-view="introduction"]').classList.add('done');
+  state.currentIndex = 0;
+  state.answers = [];
+  document.getElementById('roleTag').textContent = state.role;
+  document.getElementById('roundTag').textContent = state.round + ' Round';
+  const diffTag = document.getElementById('diffTag');
+  diffTag.textContent = state.difficulty;
+  diffTag.className = 'pill-tag diff-' + state.difficulty;
+  loadQuestion();
+  showView('interview');
+}
+
+// ---- Interview logic ----
+const answerBox = document.getElementById('answerBox');
+answerBox.addEventListener('input', () => {
+  const words = answerBox.value.trim().split(/\s+/).filter(Boolean).length;
+  document.getElementById('wordCount').textContent = answerBox.value.trim() ? words : 0;
+});
+
+function loadQuestion(){
+  clearInterval(state.timerInterval);
+  state.timerInterval = null;
+  stopRecording();
+  const q = state.questions[state.currentIndex];
+  document.getElementById('questionText').textContent = q;
+  document.getElementById('qCount').textContent = `Question ${state.currentIndex + 1} / ${state.questions.length}`;
+  answerBox.value = '';
+  document.getElementById('wordCount').textContent = '0';
+  document.getElementById('loadingRow').style.display = 'none';
+  answerBox.disabled = false;
+  document.getElementById('submitBtn').disabled = false;
+
+  speakText(q);
+
+  state.timeLeft = 120;
+  updateTimerDisplay();
+  startQuestionTimer();
+}
+
+function startQuestionTimer(){
+  clearInterval(state.timerInterval);
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    updateTimerDisplay();
+    if(state.timeLeft <= 0){
+      clearInterval(state.timerInterval);
+      state.timerInterval = null;
+      handleSubmit(true);
+    }
+  }, 1000);
+}
+
+function updateTimerDisplay(){
+  const m = Math.floor(state.timeLeft / 60).toString().padStart(2, '0');
+  const s = (state.timeLeft % 60).toString().padStart(2, '0');
+  const el = document.getElementById('timer');
+  el.textContent = `${m}:${s}`;
+  el.classList.toggle('low', state.timeLeft <= 20);
+}
+
+// ---- Mock evaluator (replace with real AI evaluation call) ----
+// ---- Weak-word detector: scans the ACTUAL answer text and suggests a stronger word ----
+// This is real string matching against what the candidate typed/said — not a generic tip.
+const WEAK_WORD_SUGGESTIONS = {
+  "good":      ["effective", "well-structured", "reliable"],
+  "nice":      ["impressive", "well-executed"],
+  "bad":       ["ineffective", "suboptimal"],
+  "big":       ["significant", "substantial"],
+  "small":     ["minor", "incremental"],
+  "stuff":     ["details", "components"],
+  "things":    ["factors", "elements"],
+  "a lot":     ["considerably", "substantially"],
+  "lots of":   ["a wide range of", "several"],
+  "very":      ["highly", "particularly"],
+  "kind of":   ["somewhat", "to some extent"],
+  "sort of":   ["to some degree", "reasonably"],
+  "basically": ["essentially", "in short"],
+  "i think":   ["I'm confident that", "in my experience"],
+  "maybe":     ["likely", "in most cases"],
+  "problem":   ["challenge", "roadblock"],
+  "fix":       ["resolve", "address"],
+  "helped":    ["contributed to", "drove"],
+  "did":       ["led", "delivered"],
+};
+
+function findWeakWordSuggestion(text){
+  const lower = text.toLowerCase();
+  for(const weak of Object.keys(WEAK_WORD_SUGGESTIONS)){
+    const re = new RegExp(`\\b${weak.replace(/\s+/g,'\\s+')}\\b`, 'i');
+    if(re.test(lower)){
+      const options = WEAK_WORD_SUGGESTIONS[weak];
+      return { word: weak, options };
+    }
+  }
+  return null;
+}
+
+function buildAnswerCoach(question, role){
+  const q = question.toLowerCase();
+  let model;
+  let steps;
+  if(q.includes('tell me about yourself') || q.includes('introduce yourself')){
+    model = `“I’m a [course/role] with a strong interest in ${role}. Through [project or experience], I developed [two relevant skills] and achieved [specific result]. I’m now looking for an opportunity where I can apply those strengths, learn from an experienced team, and contribute to meaningful work.”`;
+    steps = ['Present: who you are now', 'Proof: one relevant achievement', 'Future: why this role is next'];
+  } else if(q.includes('three words')){
+    model = `“The three words I would choose are [quality one], [quality two], and [quality three]. I chose them because [brief reason]. For example, I demonstrated [one quality] when I [specific action and result]. These qualities will help me grow in ${role}.”`;
+    steps = ['Choose three relevant qualities', 'Prove one with a real example', 'Connect them to your goal'];
+  } else if(q.includes('english') || q.includes('fluency') || q.includes('pronunciation') || q.includes('vocabulary')){
+    model = `“My goal is to communicate clearly and confidently, not simply to avoid every mistake. I practise for 30 minutes each day: ten minutes listening and shadowing, ten minutes speaking and recording myself, and ten minutes reviewing vocabulary and corrections. Each week I compare one new recording with the previous week and focus on one repeated issue.”`;
+    steps = ['Set one measurable language goal', 'Practise listening, speaking, and review', 'Record and compare weekly progress'];
+  } else if(q.includes('why do you want') || q.includes('why this') || q.includes('attracted you')){
+    model = `“This opportunity matches my strengths in [skill] and my interest in [specific part of the role]. I’m especially drawn to [company/team detail]. My experience with [example] means I can contribute quickly, while the role also gives me room to grow in [development area].”`;
+    steps = ['Match: connect your skills', 'Evidence: name a real detail', 'Value: explain your contribution'];
+  } else if(q.includes('strength')){
+    model = `“One of my strongest qualities is [specific strength]. For example, during [situation], I used it to [action], which resulted in [measurable outcome]. I believe it is valuable in ${role} because [direct relevance].”`;
+    steps = ['Name one relevant strength', 'Prove it with an example', 'Connect it to the role'];
+  } else if(q.includes('weakness') || q.includes('improve')){
+    model = `“I used to struggle with [honest, non-critical weakness]. I noticed it when [brief example], so I started [specific improvement action]. I now track progress through [measure], and I have already improved by [evidence].”`;
+    steps = ['Own a genuine weakness', 'Show the action you took', 'Give evidence of progress'];
+  } else if(q.includes('conflict') || q.includes('disagreed') || q.includes('misunderstanding')){
+    model = `“In [situation], a teammate and I disagreed about [issue]. I first listened to understand their concern, then shared evidence for my view and suggested [balanced action]. We agreed on [resolution], and the result was [positive outcome]. I learned to separate the problem from the person.”`;
+    steps = ['Situation: explain the disagreement', 'Action: listen, clarify, resolve', 'Result: outcome and lesson'];
+  } else if(q.includes('mistake') || q.includes('failed') || q.includes('failure') || q.includes('did not work')){
+    model = `“During [situation], I made the mistake of [specific error]. I took responsibility, corrected it by [action], and informed the people affected. The result was [recovery outcome]. Since then, I use [new check or habit] to prevent it happening again.”`;
+    steps = ['Own the mistake directly', 'Explain the recovery', 'Show the prevention system'];
+  } else if(q.startsWith('what would') || q.startsWith('how would') || q.includes("what's your plan") || q.includes('what is your approach')){
+    model = `“First, I would clarify the facts, urgency, and people affected. Next, I would compare the available options against [quality, risk, and deadline], communicate the plan, and take the safest effective action. Finally, I would confirm the result, document what happened, and prevent the issue from recurring.”`;
+    steps = ['Assess facts and risks', 'Act and communicate clearly', 'Verify and prevent recurrence'];
+  } else if(q.includes('describe') || q.includes('tell me about a time')){
+    model = `“In [situation], I was responsible for [task]. I decided to [specific action], including [important detail]. This led to [measurable result]. The experience taught me [lesson relevant to ${role}].”`;
+    steps = ['Situation and responsibility', 'Specific actions you took', 'Measured result and lesson'];
+  } else {
+    model = `“I would define the key idea first: [clear one-sentence answer]. A practical example is [relevant example]. The important consideration is [trade-off or limitation], so for ${role} I would [appropriate application or decision].”`;
+    steps = ['Answer directly in one sentence', 'Add a concrete example', 'Finish with application or trade-off'];
+  }
+  return { model, steps };
+}
+
+function mockEvaluate(answerText, difficulty){
+  const words = answerText.trim().split(/\s+/).filter(Boolean).length;
+  const strictness = difficulty === 'Advance' ? 10 : difficulty === 'Moderate' ? 5 : 0;
+  const hasPersonalExample = /\b(i|my|me|we|our)\b/i.test(answerText);
+  const hasStructure = /\b(first|then|next|because|therefore|finally|result|outcome|learned)\b/i.test(answerText);
+  const hasEvidence = /\b\d+(?:%| percent| days?| weeks?| months?| years?)?\b/i.test(answerText) || /\b(increased|reduced|improved|delivered|achieved|saved)\b/i.test(answerText);
+  const hasFillers = /\b(kind of|sort of|basically|maybe|stuff|things)\b/i.test(answerText);
+  let score = words === 0 ? 20 : 34 + Math.min(words, 45);
+  if(hasPersonalExample) score += 5;
+  if(hasStructure) score += 7;
+  if(hasEvidence) score += 7;
+  if(hasFillers) score -= 5;
+  score -= strictness;
+  score = Math.max(15, Math.min(score, 98));
+
+  const tags = [];
+  if(words === 0){
+    tags.push({type:'improve', text:'No answer was given — even a partial attempt scores higher than a blank.'});
+  } else {
+    if(words < 15){
+      tags.push({type:'improve', text:'Answer is quite short — try opening with "For example, when I..." to add a concrete situation → action → result structure.'});
+    } else {
+      tags.push({type:'strength', text:'Good length — enough detail for the evaluator to judge structure and reasoning.'});
+    }
+    if(hasPersonalExample){
+      tags.push({type:'strength', text:'Answer is framed around your own experience, which reads as authentic.'});
+    } else {
+      tags.push({type:'improve', text:'Try opening with "In my experience..." or "When I worked on..." to ground it in a real example.'});
+    }
+
+    const weak = findWeakWordSuggestion(answerText);
+    if(weak){
+      const opts = weak.options.map(w => `"${w}"`).join(' or ');
+      tags.push({type:'improve', text:`You used "${weak.word}" — swap it for ${opts} to sound more specific and confident.`});
+    }
+    if(hasStructure) tags.push({type:'strength', text:'Your answer uses clear sequencing or cause-and-effect language.'});
+    else tags.push({type:'improve', text:'Make the logic easier to follow with: situation → action → measurable result.'});
+    if(hasEvidence) tags.push({type:'strength', text:'You included concrete evidence or an outcome, which makes the answer credible.'});
+    else tags.push({type:'improve', text:'Add one measurable result: a number, timeframe, quality change, or clear outcome.'});
+  }
+  const coach = buildAnswerCoach(state.questions[state.currentIndex] || '', state.role || 'this role');
+  return { score, tags, modelAnswer: coach.model, improvementPath: coach.steps };
+}
+
+function handleSubmit(autoSubmitted){
+  if(state.submitting) return;
+  state.submitting = true;
+  clearInterval(state.timerInterval);
+  stopRecording();
+  answerBox.disabled = true;
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('loadingRow').style.display = 'flex';
+
+  const answerText = answerBox.value;
+
+  // >>> BACKEND CALL GOES HERE
+  // Replace this setTimeout + mockEvaluate(...) with a fetch to your Flask
+  // endpoint that sends {question, answer, difficulty} to Claude/OpenAI and
+  // returns {score, tags:[{type, text}]}.
+  setTimeout(() => {
+    const result = mockEvaluate(answerText, state.difficulty);
+    state.answers.push({
+      question: state.questions[state.currentIndex],
+      answer: answerText,
+      autoSubmitted: !!autoSubmitted,
+      score: result.score,
+      tags: result.tags,
+      modelAnswer: result.modelAnswer,
+      improvementPath: result.improvementPath
+    });
+
+    if(state.currentIndex < state.questions.length - 1){
+      state.currentIndex++;
+      state.submitting = false;
+      loadQuestion();
+    } else {
+      state.submitting = false;
+      finishRound();
+    }
+  }, 900);
+}
+
+document.getElementById('submitBtn').addEventListener('click', () => handleSubmit(false));
+document.getElementById('skipBtn').addEventListener('click', () => { answerBox.value = ''; handleSubmit(false); });
+
+// ---- Feedback view ----
+function finishRound(){
+  document.querySelector('.step-pill[data-view="interview"]').classList.add('done');
+  const answerTotal = state.answers.reduce((sum, a) => sum + a.score, 0);
+  const avg = Math.round(answerTotal / state.answers.length);
+  const hasIntro = state.introScore !== null && state.introScore !== undefined;
+
+  const circumference = 352;
+  const offset = circumference - (circumference * avg / 100);
+  document.getElementById('dialArc').style.strokeDashoffset = offset;
+  document.getElementById('dialScore').textContent = avg + '%';
+  const mainDial = document.querySelector('#view-feedback .dial:not(.dial-intro)');
+  mainDial.classList.remove('celebrate');
+  if(avg >= 80){ void mainDial.offsetWidth; mainDial.classList.add('celebrate'); }
+
+  let verdict = 'Needs more practice';
+  if(avg >= 80) verdict = 'Interview-ready';
+  else if(avg >= 60) verdict = 'Solid attempt';
+  else if(avg >= 40) verdict = 'Getting there';
+
+  document.getElementById('verdictTitle').textContent = verdict;
+  document.getElementById('verdictSub').textContent =
+    `${state.role} · ${state.difficulty} · ${state.answers.length} questions in the ${state.round} round.`;
+
+  const list = document.getElementById('feedbackList');
+  list.innerHTML = '';
+  state.answers.forEach((a, i) => {
+    const group = document.createElement('div');
+    group.className = 'feedback-answer';
+    const remarks = a.tags.map(tag => `
+      <div class="feedback-item" style="margin-top:8px;">
+        <span class="tag ${tag.type}">${tag.type === 'strength' ? 'Strength' : 'Improve'}</span>
+        <p>${escapeHtml(tag.text)}</p>
+      </div>`).join('');
+    const path = (a.improvementPath || []).map((step, n) => `
+      <div class="path-step"><b>Step ${n+1}</b>${escapeHtml(step)}</div>`).join('');
+    group.innerHTML = `
+      <strong>Q${i+1}. ${escapeHtml(a.question)}</strong>
+      <p><b>Your answer:</b> ${a.answer.trim() ? escapeHtml(a.answer) : 'No answer submitted.'}</p>
+      ${remarks}
+      <p style="margin-top:14px;"><b>Strong sample answer</b></p>
+      <p>${escapeHtml(a.modelAnswer || '')}</p>
+      <p style="margin-top:14px;"><b>Your exact improvement path</b></p>
+      <div class="path-steps">${path}</div>
+    `;
+    list.appendChild(group);
+  });
+
+  // Introduction / body-language score is shown as its own card — NOT blended into the interview score above.
+  const introCard = document.getElementById('introScoreCard');
+  if(hasIntro){
+    introCard.style.display = 'block';
+    const introOffset = circumference - (circumference * state.introScore / 100);
+    document.getElementById('introDialArc').style.strokeDashoffset = introOffset;
+    document.getElementById('introDialScore').textContent = state.introScore + '%';
+
+    let introVerdict = 'Needs more practice';
+    if(state.introScore >= 80) introVerdict = 'Very composed';
+    else if(state.introScore >= 60) introVerdict = 'Composed';
+    else if(state.introScore >= 40) introVerdict = 'A little tense';
+    document.getElementById('introVerdictTitle').textContent = introVerdict;
+
+    const introList = document.getElementById('introFeedbackList');
+    introList.innerHTML = '';
+    state.introTags.forEach(tag => {
+      const row = document.createElement('div');
+      row.className = 'feedback-item';
+      row.innerHTML = `
+        <span class="tag ${tag.type}">${tag.type === 'strength' ? 'Strength' : 'Improve'}</span>
+        <p>${escapeHtml(tag.text)}</p>
+      `;
+      introList.appendChild(row);
+    });
+  } else {
+    introCard.style.display = 'none';
+  }
+
+  state.history.push({
+    date: new Date(),
+    role: state.role,
+    round: state.round,
+    difficulty: state.difficulty,
+    score: avg,
+    introScore: hasIntro ? state.introScore : null
+  });
+  saveProgress();
+
+  showView('feedback');
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+document.getElementById('retryBtn').addEventListener('click', () => { stopIntroCamera(); stopRecording(); window.speechSynthesis.cancel(); showView('setup'); });
+document.getElementById('toDashBtn').addEventListener('click', () => {
+  renderDashboard();
+  document.querySelector('.step-pill[data-view="feedback"]').classList.add('done');
+  showView('dashboard');
+});
+
+// ---- Top 100 question library ----
+const librarySearch = document.getElementById('librarySearch');
+const libraryFilter = document.getElementById('libraryFilter');
+Object.keys(TOP_100_GROUPS).forEach(category => {
+  const option = document.createElement('option');
+  option.value = category;
+  option.textContent = category;
+  libraryFilter.appendChild(option);
+});
+
+function renderLibrary(){
+  const term = librarySearch.value.trim().toLowerCase();
+  const category = libraryFilter.value;
+  const filtered = TOP_100.filter(item =>
+    (category === 'all' || item.category === category) &&
+    (!term || `${item.question} ${item.category}`.toLowerCase().includes(term))
+  );
+  document.getElementById('libraryCount').textContent = `${filtered.length} of ${TOP_100.length} questions`;
+  const list = document.getElementById('libraryList');
+  list.innerHTML = '';
+  if(!filtered.length){
+    list.innerHTML = '<div class="library-empty">No matching questions. Try a broader search.</div>';
+    return;
+  }
+  filtered.forEach(item => {
+    const coach = buildAnswerCoach(item.question, 'the target role');
+    const row = document.createElement('div');
+    row.className = 'library-item';
+    row.innerHTML = `
+      <button class="library-question" type="button" aria-expanded="false">
+        <span class="library-number">${String(TOP_100.indexOf(item)+1).padStart(3,'0')}</span>
+        <span>${escapeHtml(item.question)}</span>
+        <span class="library-category">${escapeHtml(item.category)}</span>
+      </button>
+      <div class="library-answer">
+        <b>Strong answer framework</b><br>${escapeHtml(coach.model)}
+        <div class="path-steps">${coach.steps.map((step,n)=>`<div class="path-step"><b>Step ${n+1}</b>${escapeHtml(step)}</div>`).join('')}</div>
+      </div>`;
+    const button = row.querySelector('.library-question');
+    button.addEventListener('click', () => {
+      const open = row.classList.toggle('open');
+      button.setAttribute('aria-expanded', String(open));
+    });
+    list.appendChild(row);
+  });
+}
+librarySearch.addEventListener('input', renderLibrary);
+libraryFilter.addEventListener('change', renderLibrary);
+renderLibrary();
+
+// ---- Dashboard view ----
+function renderDashboard(){
+  const total = state.history.length;
+  document.getElementById('statTotal').textContent = total;
+
+  if(total === 0){
+    document.getElementById('historyEmpty').style.display = 'block';
+    document.getElementById('historyList').innerHTML = '';
+    document.getElementById('statAvg').textContent = '0%';
+    document.getElementById('statBest').textContent = '0%';
+    return;
+  }
+
+  document.getElementById('historyEmpty').style.display = 'none';
+  const avg = Math.round(state.history.reduce((s, h) => s + h.score, 0) / total);
+  const best = Math.max(...state.history.map(h => h.score));
+  document.getElementById('statAvg').textContent = avg + '%';
+  document.getElementById('statBest').textContent = best + '%';
+
+  const listEl = document.getElementById('historyList');
+  listEl.innerHTML = '';
+  [...state.history].reverse().forEach(h => {
+    const row = document.createElement('div');
+    row.className = 'history-row';
+    const dateStr = h.date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    row.innerHTML = `
+      <div class="history-date">${dateStr}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${h.score}%"></div></div>
+      <div class="history-meta"><b>${h.role}</b> · ${h.difficulty}</div>
+      <div class="history-score">${h.score}%${h.introScore !== null && h.introScore !== undefined ? `<span class="intro-badge" title="Self-introduction confidence score">🎥 ${h.introScore}%</span>` : ''}</div>
+    `;
+    listEl.appendChild(row);
+  });
+}
+</script>
+</body>
+</html>
